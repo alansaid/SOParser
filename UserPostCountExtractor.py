@@ -94,6 +94,6 @@ def extractUsers(minPostCount, year):
     userPosts.close()
     return set(users.keys())
 
-if __name__ == '__main__':
-    main()
+    if __name__ == '__main__':
+        main()
 

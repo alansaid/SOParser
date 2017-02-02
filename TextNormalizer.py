@@ -38,13 +38,14 @@ def parseFile(path, normalizedFilePath):
         # [rowID, creationDate, postTypeId, score, title, text, tags] = line.strip().split('\t')
 
         normalized_text = normalizeText(text)
-        print json.dumps(normalized_text)
+        normalized_text = normalized_text
         if len(title) > 0:
             normalized_title = normalizeText(title)
         else:
             normalized_title = ''
-        line = rowID + '\t' + creationDate + '\t' + postTypeId + '\t' + score + '\t' + normalized_title + '\t' + normalized_text + '\t' + tags + '\n'
-        normFile.write(line)
+        line = json.dumps({'rowID' : rowID, 'creationDate' : creationDate, 'postTypeID' : postTypeId, 'score' : score, 'title' :  normalized_title, 'text' : normalized_text})
+
+        normFile.write(line + "\n")
     normFile.close()
 
 
