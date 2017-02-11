@@ -6,53 +6,66 @@ import xml.etree.ElementTree
 
 def main():
     minposts = 50
-    years = [2013]
-    users = extractUsers(minposts, years)
-    # extractComments()
+    years = [2013, 2014]
+    # users = extractUsers(minposts, years)
+    extractComments(years)
 
-def extractComments():
+def extractComments(years):
     users = set()
     usersFile = open('../userposts.txt')
     for userline in usersFile:
         [user, number] = userline.strip().split('\t')
         users.add(user)
 
+    for year in years:
+        print "Parsing year: " + str(year)
+        months = [str(year) + "-" + str(item).zfill(2) for item in range(1,13)]
 
-    posts = open("../2014-posts.xml", 'r')
-    postsFile = open('../2014-filtered-posts.tsv','a')
-    for post in posts:
-        post = post.rstrip('\n')
-        if "row Id" not in post:
-            continue
-        doc = xml.etree.ElementTree.fromstring(post)
-        ownerUserID = doc.get('OwnerUserId')
-        if ownerUserID not in users:
-            continue
-        creationDate = doc.get('CreationDate')
-        rowID = doc.get('Id')
-        postTypeId = doc.get('PostTypeId')
-        # acceptedAnswerId = doc.get('AcceptedAnswerId')
-        score = doc.get('Score')
-        # viewCount = doc.get('ViewCount')
-        text = doc.get('Body').encode('utf8').replace('\r\n','').replace('\n','')
-        # lastEditorUserID = doc.get('LastEditorUserId')
-        # lastEditorDisplayName = doc.get('LastEditorDisplayName')
-        # lastEditDate = doc.get('LastEditDate')
-        # lastActivityDate = doc.get('LastActivityDate')
-        if 'Title' in doc:
-            title = doc.get('Title').encode('utf8')
-        else:
-            title = ''
-        if 'Tags' in doc:
-            tags = doc.get('Tags').encode('utf8')
-        else:
-            tags = ''
-        # answerCount = doc.get('AnswerCount')
-        # commentCount = doc.get('CommentCount')
-        # favoriteCount = doc.get('FavoriteCount')
-        # communityOwnedDate = doc.get('CommunityOwnedDate')
-        line = rowID + '\t' + creationDate + '\t' + postTypeId + '\t' + score + '\t' + title + '\t' + text + '\t' + tags + '\n'
-        postsFile.write(line)
+        posts = open("../"+str(year)+"-Posts.xml", 'r')
+        postsFiles = {}
+        for month in months:
+            postsFiles[month] = open("data/"+ str(month) + "-posts.tsv","a")
+
+
+
+        for post in posts:
+            post = post.rstrip('\n')
+            if "row Id" not in post:
+                continue
+            doc = xml.etree.ElementTree.fromstring(post)
+            ownerUserID = doc.get('OwnerUserId')
+            if ownerUserID not in users:
+                continue
+            creationDate = doc.get('CreationDate')
+            rowID = doc.get('Id')
+            postTypeId = doc.get('PostTypeId')
+            # acceptedAnswerId = doc.get('AcceptedAnswerId')
+            score = doc.get('Score')
+            # viewCount = doc.get('ViewCount')
+            text = doc.get('Body').encode('utf8').replace('\r\n','').replace('\n','')
+            # lastEditorUserID = doc.get('LastEditorUserId')
+            # lastEditorDisplayName = doc.get('LastEditorDisplayName')
+            # lastEditDate = doc.get('LastEditDate')
+            # lastActivityDate = doc.get('LastActivityDate')
+            if 'Title' in doc:
+                title = doc.get('Title').encode('utf8')
+            else:
+                title = ''
+            if 'Tags' in doc:
+                tags = doc.get('Tags').encode('utf8')
+            else:
+                tags = ''
+            # answerCount = doc.get('AnswerCount')
+            # commentCount = doc.get('CommentCount')
+            # favoriteCount = doc.get('FavoriteCount')
+            # communityOwnedDate = doc.get('CommunityOwnedDate')
+            line = rowID + '\t' + creationDate + '\t' + postTypeId + '\t' + score + '\t' + title + '\t' + text + '\t' + tags + '\n'
+
+            postsFiles[creationDate[0:7]].write(line)
+
+        for month in months:
+            postsFiles[month].close()
+
 
 def extractUsers(minPostCount, years):
     users = {}
