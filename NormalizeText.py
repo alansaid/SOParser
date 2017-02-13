@@ -1,5 +1,4 @@
 from gensim import utils, corpora, models
-from six import iteritems
 import logging, json
 from pprint import pprint
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.DEBUG)
