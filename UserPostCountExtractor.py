@@ -59,7 +59,7 @@ def extractComments(years):
             # commentCount = doc.get('CommentCount')
             # favoriteCount = doc.get('FavoriteCount')
             # communityOwnedDate = doc.get('CommunityOwnedDate')
-            line = rowID + '\t' + creationDate + '\t' + postTypeId + '\t' + score + '\t' + title + '\t' + text + '\t' + tags + '\n'
+            line = rowID + '\t' + creationDate + '\t' + postTypeId + '\t' + ownerUserID + '\t' + title + '\t' + text + '\t' + tags + '\n'
 
             postsFiles[creationDate[0:7]].write(line)
 
