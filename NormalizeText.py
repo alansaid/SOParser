@@ -23,13 +23,32 @@ def main():
     dates = ['2013-01', '2013-02']
 
     # createGlobalDictionary()
-    memoryBasedTokenization(dates)
-    performTFIDF(dates)
-    performLDA(dates)
+    # memoryBasedTokenization(dates)
+    # performTFIDF(dates)
+    # performLDA(dates)
     # topics = lookupLDATopics(date, ids, 5)
 
     # performHDP(date)
     # lookupHDPTopics(date, ids)
+    lookupTopics(dates)
+
+
+def lookupTopics(dates):
+    tokenized_dict = json.load(file("models/global-tokenized_dict.json"))
+    dictionary = corpora.Dictionary.load("models/global-dictionary.dict")
+
+    for date in dates:
+        topicfile = open(str(date) + "-topics.txt", 'a')
+        lda = models.LdaModel.load("models/" + date + "-lda.model")
+        for id in open("data/" + date + "-ids.txt"):
+            id = id.rstrip("\n")
+            sentence = tokenized_dict[id]
+            bow = dictionary.doc2bow(sentence)
+            topics = lda[bow]
+            topics_by_value = sorted(topics, key=lambda tup: tup[1], reverse=True)
+            topicfile.write(id + "\t" + json.dumps(topics_by_value) + "\n")
+        topicfile.close()
+
 
 def readFile(date):
     original_sentences = {}
@@ -37,8 +56,6 @@ def readFile(date):
         [id, postDate, type, score, title, text, tags] = line.split('\t')
         original_sentences[id] = text
     return original_sentences
-
-
 
 def lookupHDPTopics(date, docIDs):
     tokenized_dict = json.load(file("models/global-tokenized_dict.json"))
@@ -55,7 +72,6 @@ def lookupHDPTopics(date, docIDs):
 
     print hdp.show_topics(num_topics=-1, num_words=5, formatted=True)
 
-
 def lookupLDATopics(date, docIDs, numTopics):
     tokenized_dict = json.load(file("models/global-tokenized_dict.json"))
     dictionary = corpora.Dictionary.load("models/global-dictionary.dict")
@@ -66,9 +82,6 @@ def lookupLDATopics(date, docIDs, numTopics):
         topics = lda[bow]
         topics_by_value = sorted(topics, key=lambda tup: tup[1], reverse=True)
         return topics_by_value[:numTopics]
-
-
-
 
 def performTFIDF(dates):
     for date in dates:
@@ -98,7 +111,6 @@ def performHDP(date):
     corpora.MmCorpus.serialize('models/' + date + '-hdp.mm', hdp_corpus)
     hdp.save('models/' + date + '-hdp.model')
 
-
 def createGlobalDictionary():
     years = [2013] #, 2014]
     # stoplist = set(nltk.corpus.stopwords.words("english"))
@@ -121,11 +133,6 @@ def createGlobalDictionary():
     dictionary = corpora.Dictionary(tokenized_dict.values())
     dictionary.compactify()
     dictionary.save('models/global-dictionary.dict')
-
-
-
-# def memoryBasedStemming():
-
 
 def memoryBasedTokenization(dates):
     stoplist = set(stopwords.words("english"))
