@@ -20,11 +20,7 @@ from nltk.corpus import stopwords
 #
 
 def main():
-    # months = [str(year) + "-" + str(item).zfill(2) for item in range(1, 3)]
-
-    dates = ['2013-00']#, '2013-02']
-    # file = 'data/'+date+'-posts.tsv'
-    # ids = [14109483] #, 14108285]
+    dates = ['2013-01', '2013-02']
 
     # createGlobalDictionary()
     memoryBasedTokenization(dates)
