@@ -19,34 +19,53 @@ from nltk.corpus import stopwords
 #             yield dictionary.doc2bow(utils.lemmatize(line.split('\t')[5].lower(), stopwords=stoplist))
 #
 
+# pick 5 users, track topics over
+
 def main():
-    dates = ['2013-01', '2013-02']
+    dates = ['2013-03']#, '2013-02']
 
     # createGlobalDictionary()
     # memoryBasedTokenization(dates)
     # performTFIDF(dates)
-    # performLDA(dates)
+    performLDA(dates)
     # topics = lookupLDATopics(date, ids, 5)
 
     # performHDP(date)
     # lookupHDPTopics(date, ids)
-    lookupTopics(dates)
+    # lookupTopics(dates)
 
 
 def lookupTopics(dates):
     tokenized_dict = json.load(file("models/global-tokenized_dict.json"))
     dictionary = corpora.Dictionary.load("models/global-dictionary.dict")
 
+    users = set()
+    for user in open('2013-02-users.txt'):
+        users.add(user)
+    document_users = {}
+    document_scores = {}
     for date in dates:
+        documentfile = open("data/10k-" + str(date) + "-posts.tsv")
         topicfile = open(str(date) + "-topics.txt", 'a')
         lda = models.LdaModel.load("models/" + date + "-lda.model")
-        for id in open("data/" + date + "-ids.txt"):
-            id = id.rstrip("\n")
-            sentence = tokenized_dict[id]
+        for doc in documentfile:
+            # line = rowID + '\t' + ownerUserID + '\t' + creationDate + '\t' + postTypeId  + '\t' + text + '\t' + score + '\n'
+            [docid, userid, creationdate, type, text, score] = doc.rstrip("\n").split("\t")
+
+            # if dates[0] in creationdate:
+            #     users.add(userid)
+            # elif dates[0] not in creationdate and userid not in users:
+            #     continue
+            if userid not in users:
+                continue
+            document_users[docid] = userid
+            document_scores[docid] = score
+
+            sentence = tokenized_dict[docid]
             bow = dictionary.doc2bow(sentence)
             topics = lda[bow]
             topics_by_value = sorted(topics, key=lambda tup: tup[1], reverse=True)
-            topicfile.write(id + "\t" + json.dumps(topics_by_value) + "\n")
+            topicfile.write(docid + "\t" + userid + "\t" + score + "\t" + json.dumps(topics_by_value) + "\n")
         topicfile.close()
 
 
@@ -123,7 +142,7 @@ def createGlobalDictionary():
         for month in months:
             print "parsing month: " + month
             for line in open("data/" + month + "-posts.tsv"):
-                [id, postDate, type, score, title, text, tags] = line.split('\t')
+                [id, postDate, type, score, userid, text, tags] = line.split('\t')
                 tokenized_line = utils.lemmatize(text.lower(), stopwords=stoplist)
                 tokenized_dict[id] = tokenized_line
                 original_dict[id] = text
@@ -151,7 +170,8 @@ def memoryBasedTokenization(dates):
     for date in dates:
         print "parsing month: " + date
         for line in open("data/" + date + "-posts.tsv"):
-            [id, postDate, type, score, title, text, tags] = line.split('\t')
+            # [id, postDate, type, score, title, text, tags] = line.split('\t')
+            [id, userid, postDate, type, text, score] = line.rstrip('\n').split('\t')
             # stemmed_or_tokenized_line = utils.lemmatize(text.lower(), stopwords=stoplist)
             stemmer = PorterStemmer()
             stemmed_or_tokenized_line = [stemmer.stem(word) for word in word_tokenize(text.decode('utf-8'), language='english') if word not in stoplist]
