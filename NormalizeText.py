@@ -22,17 +22,45 @@ from nltk.corpus import stopwords
 # pick 5 users, track topics over
 
 def main():
-    dates = ['2013-03']#, '2013-02']
+    dates = ['2013-01']#, '2013-02']
 
-    # createGlobalDictionary()
-    # memoryBasedTokenization(dates)
-    # performTFIDF(dates)
+    createGlobalDictionary()
+    memoryBasedTokenization(dates)
+    performTFIDF(dates)
     performLDA(dates)
     # topics = lookupLDATopics(date, ids, 5)
 
     # performHDP(date)
     # lookupHDPTopics(date, ids)
-    # lookupTopics(dates)
+    lookupTopics(dates)
+
+    tid = 5
+
+    print "jan. topic id" + str(tid)
+    seeTopic('2013-01', tid)
+    tid = 16
+    print "jan. topic id" + str(tid)
+    seeTopic('2013-01', tid)
+    print "------------"
+    tid = 8
+    print "feb. topic id" + str(tid)
+    seeTopic('2013-02', tid)
+    tid = 11
+    print "feb. topic id" + str(tid)
+    seeTopic('2013-02', tid)
+
+
+    # print "January. topic id 16"
+
+    # seeTopic('2013-01', 16)
+
+
+def seeTopic(date, topicid):
+    lda = models.LdaModel.load("models/" + date + "-lda.model")
+    topic_terms = lda.get_topic_terms(topicid, topn=5)
+    dictionary = corpora.Dictionary.load("models/global-dictionary.dict")
+    for term in topic_terms:
+        print dictionary.get(term[0]) + "\t" + str(term[1])
 
 
 def lookupTopics(dates):
@@ -138,11 +166,11 @@ def createGlobalDictionary():
     original_dict = {}
     for year in years:
         # months = [str(year) + "-" + str(item).zfill(2) for item in range(1, 13)]
-        months = ['2013-00']
+        months = ['2013-01','2013-02']
         for month in months:
             print "parsing month: " + month
             for line in open("data/" + month + "-posts.tsv"):
-                [id, postDate, type, score, userid, text, tags] = line.split('\t')
+                [id, userid, postDate, type, text, score] = line.split('\t')
                 tokenized_line = utils.lemmatize(text.lower(), stopwords=stoplist)
                 tokenized_dict[id] = tokenized_line
                 original_dict[id] = text
@@ -150,6 +178,7 @@ def createGlobalDictionary():
     with open("models/global-tokenized_dict.json", 'w') as f: f.write(json.dumps(tokenized_dict))
     with open("models/global-original_dict.json", 'w') as f: f.write(json.dumps(original_dict))
     dictionary = corpora.Dictionary(tokenized_dict.values())
+    dictionary.filter_extremes(no_below=100, keep_n=500)
     dictionary.compactify()
     dictionary.save('models/global-dictionary.dict')
 
