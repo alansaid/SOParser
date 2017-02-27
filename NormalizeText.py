@@ -2,7 +2,7 @@ from gensim import utils, corpora, models
 from gensim.parsing.preprocessing import STOPWORDS
 import logging, json, os
 from pprint import pprint
-logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.DEBUG)
+logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.ERROR)
 from nltk.stem.porter import PorterStemmer
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
@@ -22,7 +22,7 @@ from nltk.corpus import stopwords
 # pick 5 users, track topics over
 
 def main():
-    dates = ['2013-01']#, '2013-02']
+    dates = ['2013-02']#, '2013-02']
 
     createGlobalDictionary()
     memoryBasedTokenization(dates)
@@ -169,11 +169,15 @@ def createGlobalDictionary():
         months = ['2013-01','2013-02']
         for month in months:
             print "parsing month: " + month
-            for line in open("data/" + month + "-posts.tsv"):
+            linecounter = 0
+            for line in open("data/1k-" + month + "-posts.tsv"):
+                linecounter+=1
                 [id, userid, postDate, type, text, score] = line.split('\t')
-                tokenized_line = utils.lemmatize(text.lower(), stopwords=stoplist)
+                stemmer = PorterStemmer()
+                tokenized_line = [stemmer.stem(word) for word in word_tokenize(text.decode('utf-8'), language='english') if word not in stoplist]
                 tokenized_dict[id] = tokenized_line
                 original_dict[id] = text
+                print "line: " + str(linecounter) + "\r",
 
     with open("models/global-tokenized_dict.json", 'w') as f: f.write(json.dumps(tokenized_dict))
     with open("models/global-original_dict.json", 'w') as f: f.write(json.dumps(original_dict))
@@ -198,7 +202,7 @@ def memoryBasedTokenization(dates):
 
     for date in dates:
         print "parsing month: " + date
-        for line in open("data/" + date + "-posts.tsv"):
+        for line in open("data/1k-" + date + "-posts.tsv"):
             # [id, postDate, type, score, title, text, tags] = line.split('\t')
             [id, userid, postDate, type, text, score] = line.rstrip('\n').split('\t')
             # stemmed_or_tokenized_line = utils.lemmatize(text.lower(), stopwords=stoplist)
