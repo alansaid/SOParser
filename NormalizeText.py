@@ -22,13 +22,13 @@ from nltk.corpus import stopwords
 # pick 5 users, track topics over
 
 def main():
-    dates = ['2013-02']#, '2013-02']
+    dates = ['2013-01','2013-02']#, '2013-02']
 
     createGlobalDictionary()
     memoryBasedTokenization(dates)
     performTFIDF(dates)
     performLDA(dates)
-    # topics = lookupLDATopics(date, ids, 5)
+
 
     # performHDP(date)
     # lookupHDPTopics(date, ids)
@@ -36,17 +36,17 @@ def main():
 
     tid = 5
 
-    print "jan. topic id" + str(tid)
+    print "----\njan. topic id" + str(tid)
     seeTopic('2013-01', tid)
     tid = 16
-    print "jan. topic id" + str(tid)
+    print "----\njan. topic id" + str(tid)
     seeTopic('2013-01', tid)
     print "------------"
     tid = 8
-    print "feb. topic id" + str(tid)
+    print "----\nfeb. topic id" + str(tid)
     seeTopic('2013-02', tid)
     tid = 11
-    print "feb. topic id" + str(tid)
+    print "----\nfeb. topic id" + str(tid)
     seeTopic('2013-02', tid)
 
 
@@ -59,6 +59,7 @@ def seeTopic(date, topicid):
     lda = models.LdaModel.load("models/" + date + "-lda.model")
     topic_terms = lda.get_topic_terms(topicid, topn=5)
     dictionary = corpora.Dictionary.load("models/global-dictionary.dict")
+    print len(dictionary.keys())
     for term in topic_terms:
         print dictionary.get(term[0]) + "\t" + str(term[1])
 
@@ -73,7 +74,7 @@ def lookupTopics(dates):
     document_users = {}
     document_scores = {}
     for date in dates:
-        documentfile = open("data/10k-" + str(date) + "-posts.tsv")
+        documentfile = open("data/1k-" + str(date) + "-posts.tsv")
         topicfile = open(str(date) + "-topics.txt", 'a')
         lda = models.LdaModel.load("models/" + date + "-lda.model")
         for doc in documentfile:
@@ -170,11 +171,12 @@ def createGlobalDictionary():
         for month in months:
             print "parsing month: " + month
             linecounter = 0
-            for line in open("data/1k-" + month + "-posts.tsv"):
+            for line in open("data/10k-" + month + "-posts.tsv"):
                 linecounter+=1
                 [id, userid, postDate, type, text, score] = line.split('\t')
                 stemmer = PorterStemmer()
-                tokenized_line = [stemmer.stem(word) for word in word_tokenize(text.decode('utf-8'), language='english') if word not in stoplist]
+                tokenized_line = [stemmer.stem(word) for word in word_tokenize(text.decode('utf-8'), language='english') if word not in stoplist and len(word) > 3]
+
                 tokenized_dict[id] = tokenized_line
                 original_dict[id] = text
                 print "line: " + str(linecounter) + "\r",
@@ -182,7 +184,7 @@ def createGlobalDictionary():
     with open("models/global-tokenized_dict.json", 'w') as f: f.write(json.dumps(tokenized_dict))
     with open("models/global-original_dict.json", 'w') as f: f.write(json.dumps(original_dict))
     dictionary = corpora.Dictionary(tokenized_dict.values())
-    dictionary.filter_extremes(no_below=100, keep_n=500)
+    dictionary.filter_extremes(no_below=100, no_above=0.6, keep_n=500)
     dictionary.compactify()
     dictionary.save('models/global-dictionary.dict')
 
@@ -202,15 +204,16 @@ def memoryBasedTokenization(dates):
 
     for date in dates:
         print "parsing month: " + date
-        for line in open("data/1k-" + date + "-posts.tsv"):
+        for line in open("data/10k-" + date + "-posts.tsv"):
             # [id, postDate, type, score, title, text, tags] = line.split('\t')
             [id, userid, postDate, type, text, score] = line.rstrip('\n').split('\t')
             # stemmed_or_tokenized_line = utils.lemmatize(text.lower(), stopwords=stoplist)
             stemmer = PorterStemmer()
-            stemmed_or_tokenized_line = [stemmer.stem(word) for word in word_tokenize(text.decode('utf-8'), language='english') if word not in stoplist]
+            stemmed_or_tokenized_line = [stemmer.stem(word) for word in word_tokenize(text.decode('utf-8'), language='english') if word not in stoplist and len(word) > 3]
             stemmed_or_tokenized_dict[id] = stemmed_or_tokenized_line
             original_dict[id] = text
-        dictionary = corpora.Dictionary(stemmed_or_tokenized_dict.values())
+        # dictionary = corpora.Dictionary(stemmed_or_tokenized_dict.values())
+        dictionary = corpora.Dictionary.load('models/global-dictionary.dict')
         corpus = [dictionary.doc2bow(sentence) for sentence in stemmed_or_tokenized_dict.values()]
         corpora.MmCorpus.serialize('models/' + date + '-tokenized.mm', corpus)  # store to disk, for later use
 
@@ -218,9 +221,9 @@ def memoryBasedTokenization(dates):
         f.write(json.dumps(stemmed_or_tokenized_dict))
     with open("models/global-original_dict.json", 'w') as f:
         f.write(json.dumps(original_dict))
-    dictionary = corpora.Dictionary(stemmed_or_tokenized_dict.values())
-    dictionary.compactify()
-    dictionary.save('models/global-dictionary.dict')
+    # dictionary = corpora.Dictionary(stemmed_or_tokenized_dict.values())
+    # dictionary.compactify()
+    # dictionary.save('models/global-dictionary.dict')
 
 
 # def fileBasedLemmatization(date, file):
