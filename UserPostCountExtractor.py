@@ -2,12 +2,12 @@
 # -*- coding: utf-8 -*-
 
 import xml.etree.ElementTree
-import json
+import json, csv
 
 
 def main():
     minposts = 50
-    years = [2013] #, 2014]
+    years = [2013, 2014]
     # users = extractUsers(minposts, years)
     extractComments(years)
 
@@ -21,9 +21,10 @@ def extractComments(years):
         users.add(user)
     for year in years:
         print "Parsing year: " + str(year)
-        months = [str(year) + "-" + str(item).zfill(2) for item in range(1,4)]
+        months = [str(year) + "-" + str(item).zfill(2) for item in range(1,13)]
         for month in months:
             print month
+            monthusers = set()
             postsFile = open("data/"+ str(month) + "-titles-tags.tsv","a")
             posts = open("../" + str(month) + ".Posts.xml", 'r')
             for post in posts:
@@ -34,6 +35,7 @@ def extractComments(years):
                 ownerUserID = doc.get('OwnerUserId')
                 if ownerUserID not in users:
                     continue
+                monthusers.add(ownerUserID)
                 creationDate = doc.get('CreationDate')
                 rowID = doc.get('Id')
                 postTypeId = doc.get('PostTypeId')
@@ -60,6 +62,10 @@ def extractComments(years):
                 line = rowID + '\t' + ownerUserID + '\t' + creationDate + '\t' + score + "\t" + title + '\t' + tags + '\n'
                 postsFile.write(line)
             postsFile.close()
+            monthuserfile = open("data/"+ str(month) + "-titles-users.txt","a")
+            monthuserfile.write("\n".join(monthusers))
+
+
     with open("questiontitles.json", 'w') as f:
         f.write(json.dumps(questiontitles))
     with open("questiontags.json", 'w') as f:

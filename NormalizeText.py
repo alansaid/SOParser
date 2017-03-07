@@ -11,17 +11,18 @@ import numpy
 
 
 def main():
-    dates = ['2013-01','2013-02','2013-03']#, '2013-02']
+    dates = ['2013-01', '2013-02', '2013-03', '2013-04', '2013-05', '2013-06', '2013-07', '2013-08', '2013-09', '2013-10', '2013-11', '2013-12',
+             '2014-01', '2014-02', '2014-03', '2014-04', '2014-05', '2014-06', '2014-07', '2014-08', '2014-09', '2014-10', '2014-11', '2014-12']
 
     # filterUsers(dates)
-    # createGlobalDictionary(dates)
-    # memoryBasedTokenization(dates)
-    # performTFIDF(dates)
-    # performLDA(dates)
+    createGlobalDictionary(dates)
+    memoryBasedTokenization(dates)
+    performTFIDF(dates)
+    performLDA(dates)
 
     # performHDP(date)
     # lookupHDPTopics(date, ids)
-    lookupTopics(dates)
+    # lookupTopics(dates)
 
 
 
@@ -86,15 +87,17 @@ def lookupTopics(dates):
                 if topicid not in userdoctopics[userid]:
                     userdoctopics[userid][topicid] = []
                     usertopicscores[userid][topicid] = []
-
-                userdoctopics[userid][topicid].append(topicvalue)
-                usertopicscores[userid][topicid].append(int(score))
+                topicthreshold = 0.1
+                if topicvalue >= topicthreshold:
+                    userdoctopics[userid][topicid].append(topicvalue)
+                    usertopicscores[userid][topicid].append(int(score))
         # topicfile.close()
         for userid in userdoctopics.keys():
             usertopics[userid] = {}
             for topicid in userdoctopics[userid].keys():
                 meantopicvalue = numpy.mean(userdoctopics[userid][topicid])
                 meantopicscore = numpy.mean(usertopicscores[userid][topicid])
+                numdocs = len(userdoctopics[userid][topicid])
                 if meantopicvalue < 0.1:
                     continue
                 usertopics[userid][topicid] = meantopicvalue
@@ -102,7 +105,7 @@ def lookupTopics(dates):
                 topicline = ""
                 for term in topicterms:
                     topicline += dictionary.get(term[0]).ljust(15) + "\t"
-                resultline = str(userid)+"\t"+str(topicid)+"\t"+ str(meantopicvalue) + "\t" + topicline + "\t" + str(meantopicscore) + "\n"
+                resultline = str(userid)+"\t"+str(topicid)+"\t"+ str(meantopicvalue) + "\t" + numdocs + "\t" + topicline + "\t" + str(meantopicscore) + "\n"
                 topicfile.write(resultline)
         topicfile.close()
 
