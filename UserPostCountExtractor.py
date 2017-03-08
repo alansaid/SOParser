@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import xml.etree.ElementTree
-import json, csv
+import json, re, cgi
 
 
 def main():
@@ -41,6 +41,9 @@ def extractComments(years):
                 postTypeId = doc.get('PostTypeId')
                 score = doc.get('Score')
                 text = doc.get('Body').encode('utf8').replace('\r\n','').replace('\n','')
+                tagremove = re.compile(r'(<!--.*?-->|<[^>]*>)')
+                text = cgi.escape(tagremove.sub('', re.sub('<code>[^>]+</code>', '', text)))
+
                 parent = doc.get('ParentId')
                 if 'Title' in doc.keys():
                     title = doc.get('Title').encode('utf8')
@@ -59,7 +62,7 @@ def extractComments(years):
                 else:
                     continue
                 # line = rowID + '\t' + ownerUserID + '\t' + creationDate + '\t' + title + '\t' + text + '\t' + tags + '\n'
-                line = rowID + '\t' + ownerUserID + '\t' + creationDate + '\t' + score + "\t" + title + '\t' + tags + '\n'
+                line = rowID + '\t' + ownerUserID + '\t' + creationDate + '\t' + score + "\t" + title + '\t' + tags + '\t' + text + "\n"
                 postsFile.write(line)
             postsFile.close()
             monthuserfile = open("data/"+ str(month) + "-titles-users.txt","a")
