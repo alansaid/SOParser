@@ -26,12 +26,18 @@ def extractComments(years):
         for month in months:
             yearmonth = str(year) + "-" + str(month).zfill(2)
             print(yearmonth)
-            lastmonthsquestiontitlesfile = "data/" + str(month-1).zfill(2) + "-questiontitles.json"
-            lastmonthsquestiontagsfile = "data/" + str(month - 1).zfill(2) + "-questiontags.json"
+            if month == 1:
+                lastmonth = str(year-1) + "-12"
+            else:
+                lastmonth = str(month-1).zfill(2)
+            lastmonthsquestiontitlesfile = "data/" + lastmonth + "-questiontitles.json"
+            lastmonthsquestiontagsfile = "data/" + lastmonth + "-questiontags.json"
             if os.path.isfile(lastmonthsquestiontitlesfile):
+                print("loading last month's dictionaries")
                 questiontitles = json.load(file(lastmonthsquestiontitlesfile))
                 questiontags = json.load(file(lastmonthsquestiontagsfile))
             else:
+                print("creating new dictionaries")
                 questiontitles = {}
                 questiontags = {}
 
