@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import xml.etree.ElementTree
-import json, re, cgi, os
+import json, re, cgi, os, pickle
 
 
 def main():
@@ -34,8 +34,12 @@ def extractComments(years):
             lastmonthsquestiontagsfile = "data/" + lastmonth + "-questiontags.json"
             if os.path.isfile(lastmonthsquestiontitlesfile):
                 print("loading last month's dictionaries")
-                questiontitles = json.load(file(lastmonthsquestiontitlesfile))
-                questiontags = json.load(file(lastmonthsquestiontagsfile))
+                questiontitles = {}
+                questiontags = {}
+                with open(lastmonthsquestiontitlesfile, 'r') as f:
+                    questiontitles = pickle.load(f)
+                with open(lastmonthsquestiontagsfile, 'r') as f:
+                    questiontags = pickle.load(f)
             else:
                 print("creating new dictionaries")
                 questiontitles = {}
@@ -85,10 +89,11 @@ def extractComments(years):
 
             with open("data/"+ yearmonth + "-titles-users.txt", 'w') as f:
                 f.write("\n".join(monthusers))
-            with open("data/" + yearmonth + "-questiontitles.json", 'w') as f:
-                f.write(json.dumps(questiontitles))
-            with open("data/" + yearmonth + "-questiontags.json", 'w') as f:
-                f.write(json.dumps(questiontags))
+            with open("data/" + yearmonth + "-questiontitles.dict", 'w') as f:
+                pickle.dump(questiontitles, f, 'w')
+            with open("data/" + yearmonth + "-questiontags.dict", 'w') as f:
+                pickle.dump(questiontags, f, 'w')
+
 
 
 
