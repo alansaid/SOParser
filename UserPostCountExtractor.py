@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import xml.etree.ElementTree
-import json, re, cgi, os, pickle
-
+import re, cgi, os, pickle, logging
+logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
 def main():
     minposts = 50
@@ -30,10 +30,11 @@ def extractComments(years):
                 lastmonth = str(year-1) + "-12"
             else:
                 lastmonth = str(year) + "-" + str(month-1).zfill(2)
-            lastmonthsquestiontitlesfile = "data/" + lastmonth + "-questiontitles.json"
-            lastmonthsquestiontagsfile = "data/" + lastmonth + "-questiontags.json"
+            lastmonthsquestiontitlesfile = "data/" + lastmonth + "-questiontitles.dict"
+            lastmonthsquestiontagsfile = "data/" + lastmonth + "-questiontags.dict"
             if os.path.isfile(lastmonthsquestiontitlesfile):
-                print("loading last month's dictionaries")
+                logging.info('loading dictionary: %s', lastmonthsquestiontitlesfile)
+                logging.info('loading dictionary: %s', lastmonthsquestiontagsfile)
                 questiontitles = {}
                 questiontags = {}
                 with open(lastmonthsquestiontitlesfile, 'r') as f:
@@ -41,7 +42,7 @@ def extractComments(years):
                 with open(lastmonthsquestiontagsfile, 'r') as f:
                     questiontags = pickle.load(f)
             else:
-                print("creating new dictionaries")
+                logging.info("creating new dictionaries")
                 questiontitles = {}
                 questiontags = {}
 
@@ -53,12 +54,13 @@ def extractComments(years):
                 if "row Id" not in post:
                     continue
                 doc = xml.etree.ElementTree.fromstring(post)
+                rowID = doc.get('Id')
+                logging.debug('Parsing doc: %s', rowID)
                 ownerUserID = doc.get('OwnerUserId')
                 if ownerUserID not in users:
                     continue
                 monthusers.add(ownerUserID)
                 creationDate = doc.get('CreationDate')
-                rowID = doc.get('Id')
                 postTypeId = doc.get('PostTypeId')
                 score = doc.get('Score')
                 text = doc.get('Body').encode('utf8').replace('\r\n','').replace('\n','')
@@ -90,9 +92,9 @@ def extractComments(years):
             with open("data/"+ yearmonth + "-titles-users.txt", 'w') as f:
                 f.write("\n".join(monthusers))
             with open("data/" + yearmonth + "-questiontitles.dict", 'w') as f:
-                pickle.dump(questiontitles, f, 'w')
+                pickle.dump(questiontitles, f, pickle.HIGHEST_PROTOCOL)
             with open("data/" + yearmonth + "-questiontags.dict", 'w') as f:
-                pickle.dump(questiontags, f, 'w')
+                pickle.dump(questiontags, f, pickle.HIGHEST_PROTOCOL)
 
 
 
