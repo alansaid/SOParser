@@ -29,7 +29,7 @@ def extractComments(years):
             if month == 1:
                 lastmonth = str(year-1) + "-12"
             else:
-                lastmonth = str(month-1).zfill(2)
+                lastmonth = str(year) + "-" + str(month-1).zfill(2)
             lastmonthsquestiontitlesfile = "data/" + lastmonth + "-questiontitles.json"
             lastmonthsquestiontagsfile = "data/" + lastmonth + "-questiontags.json"
             if os.path.isfile(lastmonthsquestiontitlesfile):
