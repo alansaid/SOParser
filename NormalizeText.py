@@ -15,10 +15,12 @@ def main():
              '2014-01', '2014-02', '2014-03', '2014-04', '2014-05', '2014-06', '2014-07', '2014-08', '2014-09', '2014-10', '2014-11', '2014-12']
 
     # filterUsers(dates)
-    createGlobalDictionary(dates)
-    memoryBasedTokenization(dates)
-    performTFIDF(dates)
-    performLDA(dates)
+    # createGlobalDictionary(dates)
+    # memoryBasedTokenization(dates)
+    # performTFIDF(dates)
+    # performLDA(dates)
+
+    memoryBasedTokenization(['2013-01', '2013-02'])
 
     # performHDP(date)
     # lookupHDPTopics(date, ids)
@@ -73,17 +75,12 @@ def lookupTopics(dates):
             bow = dictionary.doc2bow(sentence)
             documenttopics = lda[bow]
 
-            # topics_by_value = sorted(documenttopics, key=lambda tup: tup[1], reverse=True)
-            # topicfile.write(docid + "\t" + userid + "\t" + score + "\t" + json.dumps(topics_by_value) + "\n")
-
             for (topicid, topicvalue) in documenttopics:
                 if userid not in userdoctopics:
                     userdoctopics[userid] = {}
                     userdoctopics[userid][topicid] = []
-
                     usertopicscores[userid] = {}
                     usertopicscores[userid][topicid] = []
-
                 if topicid not in userdoctopics[userid]:
                     userdoctopics[userid][topicid] = []
                     usertopicscores[userid][topicid] = []
@@ -162,32 +159,19 @@ def performLDA(dates):
         corpora.MmCorpus.serialize('models/' + date + '-lda.mm', lda_corpus)
         lda.save('models/' + date + '-lda.model')
 
-def performHDP(date):
-    print("performing hdp")
-    dictionary = corpora.Dictionary.load("models/global-dictionary.dict")
-    corpus = corpora.MmCorpus("models/" + date + "-tfidf.mm")
-    hdp = models.HdpModel(corpus, id2word=dictionary)
-    hdp_corpus = hdp[corpus]
-    corpora.MmCorpus.serialize('models/' + date + '-hdp.mm', hdp_corpus)
-    hdp.save('models/' + date + '-hdp.model')
-
 def createGlobalDictionary(dates):
     stoplist = STOPWORDS
     tokenized_dict = {}
     original_dict = {}
     for date in dates:
         print("parsing month: " + date)
-        linecounter = 0
         for line in open("data/" + date + "-titles-tags.tsv"):
-            linecounter+=1
-            [id, userid, postDate, score, text, tags] = line.split('\t')
-            text = text + " " + tags
+            [id, userid, postDate, score, title, tags, text] = line.split('\t')
+            title = title + " " + tags
             stemmer = PorterStemmer()
-            tokenized_line = [stemmer.stem(word.lower()) for word in word_tokenize(text.decode('utf-8'), language='english') if word not in stoplist and len(word) > 3 and re.match('^[\w-]+$', word) is not None]
+            tokenized_line = [stemmer.stem(word.lower()) for word in word_tokenize(title.decode('utf-8'), language='english') if word not in stoplist and len(word) > 3 and re.match('^[\w-]+$', word) is not None]
             tokenized_dict[id] = tokenized_line
-            original_dict[id] = text
-            # print("line: " + str(linecounter) + "\r",)
-
+            original_dict[id] = title
     with open("models/global-tokenized_dict.json", 'w') as f: f.write(json.dumps(tokenized_dict))
     with open("models/global-original_dict.json", 'w') as f: f.write(json.dumps(original_dict))
     dictionary = corpora.Dictionary(tokenized_dict.values())
@@ -197,41 +181,43 @@ def createGlobalDictionary(dates):
     print("Number of terms in dictionary: " + str(len(dictionary.keys())))
 
 def memoryBasedTokenization(dates):
+    dictionary = corpora.Dictionary([])
     stoplist = set(stopwords.words("english"))
-
-    stemmed_or_tokenized_file = "models/global-tokenized_dict.json"
-    if os.path.isfile(stemmed_or_tokenized_file):
-        stemmed_or_tokenized_dict = json.load(file(stemmed_or_tokenized_file))
-    else:
-        stemmed_or_tokenized_dict = {}
+    # stemmed_or_tokenized_file = "models/global-tokenized_dict.json"
+    # if os.path.isfile(stemmed_or_tokenized_file):
+    #     tokenized_dict = json.load(file(stemmed_or_tokenized_file))
+    # else:
+    #     tokenized_dict = {}
     original_file = "models/global-original_dict.json"
     if os.path.isfile(original_file):
         original_dict = json.load(file(original_file))
     else:
         original_dict = {}
-
     for date in dates:
+        tokenized_dict = {}
         print("parsing month: " + date)
         for line in open("data/" + date + "-titles-tags.tsv"):
-            # [id, postDate, type, score, title, text, tags] = line.split('\t')
-            [id, userid, postDate, score, text, tags] = line.rstrip('\n').split('\t')
-            text = text + " " + tags
-            # stemmed_or_tokenized_line = utils.lemmatize(text.lower(), stopwords=stoplist)
+            [id, userid, postDate, score, title, tags] = line.rstrip('\n').split('\t')
+            text =""
+            title = title + " " + tags + " " + text
             stemmer = PorterStemmer()
-            stemmed_or_tokenized_line = [stemmer.stem(word.lower()) for word in word_tokenize(text.decode('utf-8'), language='english') if word not in stoplist and len(word) > 3]
-            stemmed_or_tokenized_dict[id] = stemmed_or_tokenized_line
-            original_dict[id] = text
-        # dictionary = corpora.Dictionary(stemmed_or_tokenized_dict.values())
-        dictionary = corpora.Dictionary.load('models/global-dictionary.dict')
-        corpus = [dictionary.doc2bow(sentence) for sentence in stemmed_or_tokenized_dict.values()]
+            tokenized_line = [stemmer.stem(word.lower()) for word in word_tokenize(title.decode('utf-8'), language='english') if word not in stoplist and len(word) > 3 and re.match('^[\w-]+$', word) is not None]
+            tokenized_dict[id] = tokenized_line
+
+        #dictionary = corpora.Dictionary.load('models/global-dictionary.dict')
+        # dictionary = corpora.Dictionary(tokenized_dict.values())
+        dictionary.add_documents(tokenized_dict.values())
+        dictionary.filter_extremes(no_below=200, no_above=0.8, keep_n=1000)
+        corpus = [dictionary.doc2bow(sentence) for sentence in tokenized_dict.values()]
         corpora.MmCorpus.serialize('models/' + date + '-tokenized.mm', corpus)  # store to disk, for later use
 
+    dictionary.save('models/global-dictionary.dict')
+    print("Number of terms in dictionary: " + str(len(dictionary.keys())))
     with open("models/global-tokenized_dict.json", 'w') as f:
-        f.write(json.dumps(stemmed_or_tokenized_dict))
+        f.write(json.dumps(tokenized_dict))
     with open("models/global-original_dict.json", 'w') as f:
         f.write(json.dumps(original_dict))
-    # dictionary = corpora.Dictionary(stemmed_or_tokenized_dict.values())
-    # dictionary.compactify()
+    # dictionary = corpora.Dictionary(tokenized_dict.values())
     # dictionary.save('models/global-dictionary.dict')
 
 

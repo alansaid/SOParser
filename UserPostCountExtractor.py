@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import xml.etree.ElementTree
-import json, re, cgi
+import json, re, cgi, os
 
 
 def main():
@@ -13,21 +13,32 @@ def main():
 
 def extractComments(years):
     users = set()
-    usersFile = open('../userposts.txt')
-    questiontitles = {}
-    questiontags = {}
+    usersFile = open('../userposts.txt', 'r')
     for userline in usersFile:
         [user, number] = userline.strip().split('\t')
         users.add(user)
+    usersFile.close()
+
     for year in years:
         print "Parsing year: " + str(year)
-        months = [str(year) + "-" + str(item).zfill(2) for item in range(1,13)]
+        months = range(1,13)
+
         for month in months:
-            print month
+            yearmonth = str(year) + "-" + str(month).zfill(2)
+            print(yearmonth)
+            lastmonthsquestiontitlesfile = "data/" + str(month-1).zfill(2) + "-questiontitles.json"
+            lastmonthsquestiontagsfile = "data/" + str(month - 1).zfill(2) + "-questiontags.json"
+            if os.path.isfile(lastmonthsquestiontitlesfile):
+                questiontitles = json.load(file(lastmonthsquestiontitlesfile))
+                questiontags = json.load(file(lastmonthsquestiontagsfile))
+            else:
+                questiontitles = {}
+                questiontags = {}
+
             monthusers = set()
-            postsFile = open("data/"+ str(month) + "-titles-tags.tsv","a")
-            posts = open("../" + str(month) + ".Posts.xml", 'r')
-            for post in posts:
+            parsedpostsfile = open("data/"+ yearmonth + "-titles-tags.tsv","a")
+            rawpostsfile = open("../" + yearmonth + ".Posts.xml", 'r')
+            for post in rawpostsfile:
                 post = post.rstrip('\n')
                 if "row Id" not in post:
                     continue
@@ -61,18 +72,18 @@ def extractComments(years):
                     title = questiontitles[parent]
                 else:
                     continue
-                # line = rowID + '\t' + ownerUserID + '\t' + creationDate + '\t' + title + '\t' + text + '\t' + tags + '\n'
                 line = rowID + '\t' + ownerUserID + '\t' + creationDate + '\t' + score + "\t" + title + '\t' + tags + '\t' + text + "\n"
-                postsFile.write(line)
-            postsFile.close()
-            monthuserfile = open("data/"+ str(month) + "-titles-users.txt","a")
-            monthuserfile.write("\n".join(monthusers))
+                parsedpostsfile.write(line)
+            parsedpostsfile.close()
+            rawpostsfile.close()
 
+            with open("data/"+ yearmonth + "-titles-users.txt", 'w') as f:
+                f.write("\n".join(monthusers))
+            with open("data/" + yearmonth + "-questiontitles.json", 'w') as f:
+                f.write(json.dumps(questiontitles))
+            with open("data/" + yearmonth + "-questiontags.json", 'w') as f:
+                f.write(json.dumps(questiontags))
 
-    with open("questiontitles.json", 'w') as f:
-        f.write(json.dumps(questiontitles))
-    with open("questiontags.json", 'w') as f:
-        f.write(json.dumps(questiontags))
 
 
 def extractUsers(minPostCount, years):
