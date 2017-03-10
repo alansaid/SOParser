@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import xml.etree.ElementTree
-import re, cgi, os, pickle, logging
+import re, cgi, os, pickle, logging, time
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
 def main():
@@ -24,6 +24,7 @@ def extractComments(years):
         months = range(1,13)
 
         for month in months:
+            start = time.time()
             yearmonth = str(year) + "-" + str(month).zfill(2)
             print(yearmonth)
             if month == 1:
@@ -33,21 +34,23 @@ def extractComments(years):
             lastmonthsquestiontitlesfile = "data/" + lastmonth + "-questiontitles.dict"
             lastmonthsquestiontagsfile = "data/" + lastmonth + "-questiontags.dict"
             if os.path.isfile(lastmonthsquestiontitlesfile):
-                logging.info('loading dictionary: %s', lastmonthsquestiontitlesfile)
-                logging.info('loading dictionary: %s', lastmonthsquestiontagsfile)
+                logging.info('loading title dictionary: %s', lastmonthsquestiontitlesfile)
+                logging.info('loading tag dictionary: %s', lastmonthsquestiontagsfile)
                 questiontitles = {}
                 questiontags = {}
                 with open(lastmonthsquestiontitlesfile, 'r') as f:
                     questiontitles = pickle.load(f)
+                    logging.info("Elements in questiontitles: %s", len(questiontitles))
                 with open(lastmonthsquestiontagsfile, 'r') as f:
                     questiontags = pickle.load(f)
+                    logging.info("Elements in questiontags: %s", len(questiontags))
             else:
                 logging.info("creating new dictionaries")
                 questiontitles = {}
                 questiontags = {}
 
             monthusers = set()
-            parsedpostsfile = open("data/"+ yearmonth + "-titles-tags.tsv","a")
+            parsedpostsfile = open("data/"+ yearmonth + "-titles-tags-text.tsv","a")
             rawpostsfile = open("../" + yearmonth + ".Posts.xml", 'r')
             for post in rawpostsfile:
                 post = post.rstrip('\n')
@@ -79,11 +82,12 @@ def extractComments(years):
                 if postTypeId == "1":
                     questiontags[rowID] = tags
                     questiontitles[rowID] = title
-                elif parent in questiontitles.keys() and parent in questiontags.keys() :
-                    tags = questiontags[parent]
-                    title = questiontitles[parent]
                 else:
-                    continue
+                    try:
+                        tags = questiontags[parent]
+                        title = questiontitles[parent]
+                    except KeyError:
+                        continue
                 line = rowID + '\t' + ownerUserID + '\t' + creationDate + '\t' + score + "\t" + title + '\t' + tags + '\t' + text + "\n"
                 parsedpostsfile.write(line)
             parsedpostsfile.close()
@@ -95,7 +99,8 @@ def extractComments(years):
                 pickle.dump(questiontitles, f, pickle.HIGHEST_PROTOCOL)
             with open("data/" + yearmonth + "-questiontags.dict", 'w') as f:
                 pickle.dump(questiontags, f, pickle.HIGHEST_PROTOCOL)
-
+            end = time.time() - start
+            logging.info("Elapsed time (s): %s", end)
 
 
 
