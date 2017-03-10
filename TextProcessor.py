@@ -1,12 +1,11 @@
 from __future__ import print_function
-from gensim import utils, corpora, models
+from gensim import corpora, models
 from gensim.parsing.preprocessing import STOPWORDS
-import logging, os, re, numpy, pickle
-from pprint import pprint
+import logging, re, numpy, pickle
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.DEBUG)
 from nltk.stem.porter import PorterStemmer
 from nltk.tokenize import word_tokenize
-from nltk.corpus import stopwords
+
 
 
 
@@ -14,14 +13,18 @@ def main():
     dates = ['2013-01', '2013-02', '2013-03', '2013-04', '2013-05', '2013-06', '2013-07', '2013-08', '2013-09', '2013-10', '2013-11', '2013-12',
              '2014-01', '2014-02', '2014-03', '2014-04', '2014-05', '2014-06', '2014-07', '2014-08', '2014-09', '2014-10', '2014-11', '2014-12']
 
-    dates = ['2013-01', '2013-02']
+    dates = ['2013-01', '2013-02', '2013-03']
+
+    dates = ['2013-04', '2013-05', '2013-06', '2013-07', '2013-08', '2013-09',
+             '2013-10', '2013-11', '2013-12',
+             '2014-01', '2014-02', '2014-03', '2014-04', '2014-05', '2014-06', '2014-07', '2014-08', '2014-09',
+             '2014-10', '2014-11', '2014-12']
+
     # filterUsers(dates)
     createDictionariesFromFiles(dates)
     createMonthCorpuses(dates)
     performTFIDF(dates)
     performLDA(dates)
-
-
     lookupTopics(dates)
 
 
@@ -55,12 +58,13 @@ def lookupTopics(dates):
     document_users = {}
     document_scores = {}
     for date in dates:
+        date = str(date)
         print(date)
         usertopics = {}
         userdoctopics = {}
         usertopicscores = {}
-        documentfile = open("data/" + str(date) + "-titles-tags-text.tsv")
-        topicfile = open(str(date) + "-topics.txt", 'a')
+        documentfile = open("data/" + date + "-titles-tags-text.tsv")
+        topicfile = open("topics/" + date + "-topics.txt", 'a')
         lda = models.LdaModel.load("models/" + date + "-lda.model")
 
         for doc in documentfile:
@@ -77,20 +81,20 @@ def lookupTopics(dates):
             documenttopics = lda[bow]
 
             for (topicid, topicvalue) in documenttopics:
-                try:
-                    userdoctopics[userid]
-                except KeyError:
-                    userdoctopics[userid] = {}
-                    userdoctopics[userid][topicid] = []
-                    usertopicscores[userid] = {}
-                    usertopicscores[userid][topicid] = []
-                try:
-                    userdoctopics[userid][topicid]
-                except KeyError:
-                    userdoctopics[userid][topicid] = []
-                    usertopicscores[userid][topicid] = []
                 topicthreshold = 0.1
                 if topicvalue >= topicthreshold:
+                    try:
+                        userdoctopics[userid]
+                    except KeyError:
+                        userdoctopics[userid] = {}
+                        userdoctopics[userid][topicid] = []
+                        usertopicscores[userid] = {}
+                        usertopicscores[userid][topicid] = []
+                    try:
+                        userdoctopics[userid][topicid]
+                    except KeyError:
+                        userdoctopics[userid][topicid] = []
+                        usertopicscores[userid][topicid] = []
                     userdoctopics[userid][topicid].append(topicvalue)
                     usertopicscores[userid][topicid].append(int(score))
         for userid in userdoctopics.keys():
