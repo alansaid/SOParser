@@ -1,7 +1,7 @@
 from __future__ import print_function
 from gensim import corpora, models
 from gensim.parsing.preprocessing import STOPWORDS
-import logging, re, numpy, pickle
+import logging, re, numpy, pickle, cPickle
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.DEBUG)
 from nltk.stem.porter import PorterStemmer
 from nltk.tokenize import word_tokenize
@@ -13,18 +13,19 @@ def main():
     dates = ['2013-01', '2013-02', '2013-03', '2013-04', '2013-05', '2013-06', '2013-07', '2013-08', '2013-09', '2013-10', '2013-11', '2013-12',
              '2014-01', '2014-02', '2014-03', '2014-04', '2014-05', '2014-06', '2014-07', '2014-08', '2014-09', '2014-10', '2014-11', '2014-12']
 
-    dates = ['2013-01', '2013-02', '2013-03']
+    # dates = ['2013-01', '2013-02', '2013-03']
 
-    dates = ['2013-04', '2013-05', '2013-06', '2013-07', '2013-08', '2013-09',
-             '2013-10', '2013-11', '2013-12',
-             '2014-01', '2014-02', '2014-03', '2014-04', '2014-05', '2014-06', '2014-07', '2014-08', '2014-09',
-             '2014-10', '2014-11', '2014-12']
+    # dates = ['2013-04', '2013-05', '2013-06', '2013-07', '2013-08', '2013-09',
+    #          '2013-10', '2013-11', '2013-12',
+    #          '2014-01', '2014-02', '2014-03', '2014-04', '2014-05', '2014-06', '2014-07', '2014-08', '2014-09',
+    #          '2014-10', '2014-11', '2014-12']
 
     # filterUsers(dates)
-    createDictionariesFromFiles(dates)
-    createMonthCorpuses(dates)
-    performTFIDF(dates)
-    performLDA(dates)
+    # createDictionariesFromFiles(dates)
+    # createGlobalDictionaryFromMonthly(dates)
+    # createMonthCorpuses(dates)
+    # performTFIDF(dates)
+    # performLDA(dates)
     lookupTopics(dates)
 
 
@@ -47,10 +48,10 @@ def filterUsers(dates):
 
 
 def lookupTopics(dates):
-    tokenized_dictfile = "models/global-tokenized_dict.pdict"
-    tokenized_dict = {}
-    with open(tokenized_dictfile, 'r') as f:
-        tokenized_dict = pickle.load(f)
+    # tokenized_dictfile = "models/global-tokenized_dict.pdict"
+    # tokenized_dict = {}
+    # with open(tokenized_dictfile, 'r') as f:
+    #     tokenized_dict = cPickle.load(f)
     dictionary = corpora.Dictionary.load("models/global-dictionary.dict")
     # users = set()
     # for user in open("data/all-month-users.txt"):
@@ -60,11 +61,18 @@ def lookupTopics(dates):
     for date in dates:
         date = str(date)
         print(date)
+
+        tokenized_dictfile = "models/"+date+"-monthly-tokenized_dict.pdict"
+        tokenized_dict = {}
+        with open(tokenized_dictfile, 'r') as f:
+            tokenized_dict = cPickle.load(f)
+
+
         usertopics = {}
         userdoctopics = {}
         usertopicscores = {}
         documentfile = open("data/" + date + "-titles-tags-text.tsv")
-        topicfile = open("topics/" + date + "-topics.txt", 'a')
+        topicfile = open("topics/" + date + "-topics.txt", 'w')
         lda = models.LdaModel.load("models/" + date + "-lda.model")
 
         for doc in documentfile:
@@ -165,6 +173,39 @@ def writepicklefile(content, filename):
     with open(filename, 'w') as f:
         pickle.dump(content, f, pickle.HIGHEST_PROTOCOL)
 
+def writecpicklefile(content, filename):
+    with open(filename, 'w') as f:
+        cPickle.dump(content, f, cPickle.HIGHEST_PROTOCOL)
+
+
+def createGlobalDictionaryFromMonthly(dates):
+    global_tokenized_dict = {}
+    for date in dates:
+        monthly_tokenized_dictfile = "models/" + date + "-monthly-tokenized_dict.pdict"
+        with open(monthly_tokenized_dictfile, 'r') as f:
+            logging.info("Opening file %s", monthly_tokenized_dictfile)
+            global_tokenized_dict = merge_two_dicts(pickle.load(f), global_tokenized_dict)
+
+    # global_tokenized_dictfile = "models/global-tokenized_dict.pdict"
+    # writecpicklefile(global_tokenized_dict, global_tokenized_dictfile)
+    # logging.info("Loaded %s elements into global dictionary", len(global_tokenized_dict))
+
+    logging.info("Creating corpora.Dictionary")
+    dictionary = corpora.Dictionary(global_tokenized_dict.values())
+    logging.info("Compressing dictionary of size: %s", len(dictionary))
+    dictionary.filter_extremes(no_below=200, no_above=0.8, keep_n=2000)
+    dictionary.compactify()
+    logging.info("Dictionary size: %s", len(dictionary))
+    dictionary.save('models/global-dictionary.dict')
+
+
+
+def merge_two_dicts(x, y):
+    """Given two dicts, merge them into a new dict as a shallow copy."""
+    z = x.copy()
+    z.update(y)
+    return z
+
 def createDictionariesFromFiles(dates):
     global_tokenized_dict = {}
     global_original_dict = {}
@@ -193,16 +234,19 @@ def createDictionariesFromFiles(dates):
         monthly_original_dictfile = "models/"+date+"-monthly-original_dict.pdict"
         writepicklefile(monthly_original_dict, monthly_original_dictfile)
 
-    global_tokenized_dictfile = "models/global-tokenized_dict.pdict"
-    writepicklefile(global_tokenized_dict, global_tokenized_dictfile)
-    global_original_dictfile = "models/global-original_dict.pdict"
-    writepicklefile(global_original_dict, global_original_dictfile)
+    # global_tokenized_dictfile = "models/global-tokenized_dict.pdict"
+    # logging.info("Writing global tokenized dictionary")
+    # writepicklefile(global_tokenized_dict, global_tokenized_dictfile)
+    # global_original_dictfile = "models/global-original_dict.pdict"
+    # logging.info("Writing global original dictionary")
+    # writepicklefile(global_original_dict, global_original_dictfile)
 
-    dictionary = corpora.Dictionary(global_tokenized_dict.values())
-    dictionary.filter_extremes(no_below=200, no_above=0.8, keep_n=1000)
-    dictionary.compactify()
-    dictionary.save('models/global-dictionary.dict')
-    logging.info("Dictionary size: %s", len(dictionary))
+    # dictionary = corpora.Dictionary(global_tokenized_dict.values())
+    # logging.info("Compressing dictionary of size: %s", len(dictionary))
+    # dictionary.filter_extremes(no_below=200, no_above=0.8, keep_n=1000)
+    # dictionary.compactify()
+    # dictionary.save('models/global-dictionary.dict')
+    # logging.info("Dictionary size: %s", len(dictionary))
 
 def createMonthCorpuses(dates):
     for date in dates:
