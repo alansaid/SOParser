@@ -13,8 +13,10 @@ def main():
     dates = ['2013-01', '2013-02', '2013-03', '2013-04', '2013-05', '2013-06', '2013-07', '2013-08', '2013-09', '2013-10', '2013-11', '2013-12',
              '2014-01', '2014-02', '2014-03', '2014-04', '2014-05', '2014-06', '2014-07', '2014-08', '2014-09', '2014-10', '2014-11', '2014-12']
 
-    # dates = ['2013-01', '2013-02', '2013-03']
+    dates = ['2013-01', '2013-02']
 
+    numtopics = 40
+    # vocabsize = 500
     # dates = ['2013-04', '2013-05', '2013-06', '2013-07', '2013-08', '2013-09',
     #          '2013-10', '2013-11', '2013-12',
     #          '2014-01', '2014-02', '2014-03', '2014-04', '2014-05', '2014-06', '2014-07', '2014-08', '2014-09',
@@ -24,8 +26,9 @@ def main():
     # createDictionariesFromFiles(dates)
     # createGlobalDictionaryFromMonthly(dates)
     # createMonthCorpuses(dates)
+
     # performTFIDF(dates)
-    # performLDA(dates)
+    performLDA(dates)
     lookupTopics(dates)
 
 
@@ -157,7 +160,7 @@ def performLDA(dates):
         print("performing lda on " + str(date))
         dictionary = corpora.Dictionary.load("models/global-dictionary.dict")
         corpus = corpora.MmCorpus("models/" + date + "-tfidf.mm")
-        lda = models.LdaMulticore(corpus, id2word=dictionary, num_topics=20, workers=3)
+        lda = models.LdaMulticore(corpus, id2word=dictionary, num_topics=40, workers=3)
         # lda = models.LdaModel(corpus, alpha='auto', id2word=dictionary, num_topics=20)
         lda_corpus = lda[corpus]
         corpora.MmCorpus.serialize('models/' + date + '-lda.mm', lda_corpus)
