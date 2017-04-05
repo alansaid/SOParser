@@ -7,7 +7,7 @@ from numpy import array
 def main():
     dates = ['2013-01', '2013-02', '2013-03', '2013-04', '2013-05', '2013-06', '2013-07', '2013-08', '2013-09', '2013-10', '2013-11', '2013-12',
              '2014-01', '2014-02', '2014-03', '2014-04', '2014-05', '2014-06', '2014-07', '2014-08', '2014-09', '2014-10', '2014-11', '2014-12']
-    dates = ['2013-01', '2013-02']
+    dates = ['2013-01', '2013-02', '2013-03', '2013-03']
     compareMonths(dates)
 
 
@@ -19,25 +19,12 @@ def compareMonths(dates):
         print month
         nextmonth = dates[i]
         TVDBasedSimilarity(month, nextmonth)
-        # KLDBasedSimilarity(month, nextmonth)
-        # JSDBasedSimilarity(month, nextmonth)
+        KLDBasedSimilarity(month, nextmonth)
+        JSDBasedSimilarity(month, nextmonth)
         # intersectionBasedSimilarity(month, nextmonth)
         i += 1
         if i >= len(dates):
             break
-
-
-
-
-    #
-    # for month in dates:
-    #     # printTopicWords(month)
-    #     fil = open(month+ "-dist.txt", "w")
-    #     dists = prepareDistribution(month)
-    #     for dist in dists:
-    #         fil.write(" ".join(str(v) for v in dist) + "\n")
-    #     fil.close()
-
 
 def similarity(month1, month2, simfunc, filename):
     f = open("topics/"+filename+"_" + month1 + "_" + month2 + ".txt", "w")

@@ -13,22 +13,18 @@ def main():
     dates = ['2013-01', '2013-02', '2013-03', '2013-04', '2013-05', '2013-06', '2013-07', '2013-08', '2013-09', '2013-10', '2013-11', '2013-12',
              '2014-01', '2014-02', '2014-03', '2014-04', '2014-05', '2014-06', '2014-07', '2014-08', '2014-09', '2014-10', '2014-11', '2014-12']
 
-    dates = ['2013-01', '2013-02']
+    dates = ['2013-01', '2013-02', '2013-03']
 
     numtopics = 40
     # vocabsize = 500
-    # dates = ['2013-04', '2013-05', '2013-06', '2013-07', '2013-08', '2013-09',
-    #          '2013-10', '2013-11', '2013-12',
-    #          '2014-01', '2014-02', '2014-03', '2014-04', '2014-05', '2014-06', '2014-07', '2014-08', '2014-09',
-    #          '2014-10', '2014-11', '2014-12']
 
     # filterUsers(dates)
     # createDictionariesFromFiles(dates)
     # createGlobalDictionaryFromMonthly(dates)
-    # createMonthCorpuses(dates)
+    createMonthCorpuses(dates)
 
-    # performTFIDF(dates)
-    performLDA(dates)
+    performTFIDF(dates)
+    performLDA(dates, numtopics)
     lookupTopics(dates)
 
 
@@ -48,17 +44,8 @@ def filterUsers(dates):
         ufile.write(user + "\n")
     ufile.close()
 
-
-
 def lookupTopics(dates):
-    # tokenized_dictfile = "models/global-tokenized_dict.pdict"
-    # tokenized_dict = {}
-    # with open(tokenized_dictfile, 'r') as f:
-    #     tokenized_dict = cPickle.load(f)
     dictionary = corpora.Dictionary.load("models/global-dictionary.dict")
-    # users = set()
-    # for user in open("data/all-month-users.txt"):
-    #     users.add(user.strip("\n"))
     document_users = {}
     document_scores = {}
     for date in dates:
@@ -70,7 +57,6 @@ def lookupTopics(dates):
         with open(tokenized_dictfile, 'r') as f:
             tokenized_dict = cPickle.load(f)
 
-
         usertopics = {}
         userdoctopics = {}
         usertopicscores = {}
@@ -80,17 +66,11 @@ def lookupTopics(dates):
 
         for doc in documentfile:
             [docid, userid, creationdate, score, title, tags, text] = doc.rstrip("\n").split("\t")
-
-            # if userid not in users:
-            #     continue
-
             document_users[docid] = userid
             document_scores[docid] = score
-
             sentence = tokenized_dict[docid]
             bow = dictionary.doc2bow(sentence)
             documenttopics = lda[bow]
-
             for (topicid, topicvalue) in documenttopics:
                 topicthreshold = 0.1
                 if topicvalue >= topicthreshold:
@@ -125,14 +105,12 @@ def lookupTopics(dates):
                 topicfile.write(resultline)
         topicfile.close()
 
-
 def readFile(date):
     original_sentences = {}
     for line in open("data/" + date + "-posts.tsv"):
         [id, postDate, type, score, title, text, tags] = line.split('\t')
         original_sentences[id] = text
     return original_sentences
-
 
 def lookupLDATopics(date, docIDs, numTopics):
     tokenized_dictfile = "models/global-tokenized_dict.pdict"
@@ -147,6 +125,24 @@ def lookupLDATopics(date, docIDs, numTopics):
         topics_by_value = sorted(topics, key=lambda tup: tup[1], reverse=True)
         return topics_by_value[:numTopics]
 
+def calculateEta(dates, date, numtopics):
+    prioldafile = "models/" + dates[dates.index(date) - 1] + "-lda.model"
+    logging.info("loading " + prioldafile)
+    priorlda = models.LdaModel.load(prioldafile)
+    eta = numpy.zeros((numtopics, 2000))
+    topics = priorlda.show_topics(num_topics=-1, num_words=2000, formatted=False)
+    indexes = priorlda.id2word
+    reverseindexes = dict(zip(indexes.values(), indexes.keys()))
+    for topic in topics:
+        topicid = topic[0]
+        wordlist = topic[1]
+        for wordtuple in wordlist:
+            word = wordtuple[0]
+            value = wordtuple[1]
+            index = reverseindexes[word]
+            eta[topicid][index] = value
+    return eta
+
 def performTFIDF(dates):
     for date in dates:
         corpus = corpora.MmCorpus("models/" + date + "-tokenized.mm")
@@ -155,13 +151,18 @@ def performTFIDF(dates):
         tfidf_corpus = tfidf[corpus]
         corpora.MmCorpus.save_corpus("models/"+date+"-tfidf.mm", tfidf_corpus)
 
-def performLDA(dates):
+def performLDA(dates, numtopics):
     for date in dates:
         print("performing lda on " + str(date))
         dictionary = corpora.Dictionary.load("models/global-dictionary.dict")
         corpus = corpora.MmCorpus("models/" + date + "-tfidf.mm")
-        lda = models.LdaMulticore(corpus, id2word=dictionary, num_topics=40, workers=3)
-        # lda = models.LdaModel(corpus, alpha='auto', id2word=dictionary, num_topics=20)
+        if date != dates[0]:
+            logging.info("Not month one, getting eta from last month")
+            eta = calculateEta(dates, date, numtopics)
+            lda = models.LdaMulticore(corpus, id2word=dictionary, num_topics=numtopics, workers=3, eta=eta)
+        else:
+            logging.info("Month one, not setting eta")
+            lda = models.LdaMulticore(corpus, id2word=dictionary, num_topics=numtopics, workers=3)
         lda_corpus = lda[corpus]
         corpora.MmCorpus.serialize('models/' + date + '-lda.mm', lda_corpus)
         lda.save('models/' + date + '-lda.model')
@@ -188,11 +189,6 @@ def createGlobalDictionaryFromMonthly(dates):
         with open(monthly_tokenized_dictfile, 'r') as f:
             logging.info("Opening file %s", monthly_tokenized_dictfile)
             global_tokenized_dict = merge_two_dicts(pickle.load(f), global_tokenized_dict)
-
-    # global_tokenized_dictfile = "models/global-tokenized_dict.pdict"
-    # writecpicklefile(global_tokenized_dict, global_tokenized_dictfile)
-    # logging.info("Loaded %s elements into global dictionary", len(global_tokenized_dict))
-
     logging.info("Creating corpora.Dictionary")
     dictionary = corpora.Dictionary(global_tokenized_dict.values())
     logging.info("Compressing dictionary of size: %s", len(dictionary))
@@ -200,8 +196,6 @@ def createGlobalDictionaryFromMonthly(dates):
     dictionary.compactify()
     logging.info("Dictionary size: %s", len(dictionary))
     dictionary.save('models/global-dictionary.dict')
-
-
 
 def merge_two_dicts(x, y):
     """Given two dicts, merge them into a new dict as a shallow copy."""
@@ -219,15 +213,11 @@ def createDictionariesFromFiles(dates):
         docids = {}
         for line in open("data/" + date + "-titles-tags-text.tsv"):
             [id, userid, postDate, score, title, tags, text] = line.split('\t')
-
             docids[id] = (userid, score)
-
             text = title + " " + tags + " " + text
             tokenized_line = tokenizeandstemline(text)
-
             global_tokenized_dict[id] = tokenized_line
             global_original_dict[id] = text
-
             monthly_tokenized_dict[id] = tokenized_line
             monthly_original_dict[id] = text
         monthly_docids_dictfile = "models/"+date+"-docids.pdict"
@@ -236,20 +226,6 @@ def createDictionariesFromFiles(dates):
         writepicklefile(monthly_tokenized_dict, monthly_tokenized_dictfile)
         monthly_original_dictfile = "models/"+date+"-monthly-original_dict.pdict"
         writepicklefile(monthly_original_dict, monthly_original_dictfile)
-
-    # global_tokenized_dictfile = "models/global-tokenized_dict.pdict"
-    # logging.info("Writing global tokenized dictionary")
-    # writepicklefile(global_tokenized_dict, global_tokenized_dictfile)
-    # global_original_dictfile = "models/global-original_dict.pdict"
-    # logging.info("Writing global original dictionary")
-    # writepicklefile(global_original_dict, global_original_dictfile)
-
-    # dictionary = corpora.Dictionary(global_tokenized_dict.values())
-    # logging.info("Compressing dictionary of size: %s", len(dictionary))
-    # dictionary.filter_extremes(no_below=200, no_above=0.8, keep_n=1000)
-    # dictionary.compactify()
-    # dictionary.save('models/global-dictionary.dict')
-    # logging.info("Dictionary size: %s", len(dictionary))
 
 def createMonthCorpuses(dates):
     for date in dates:
@@ -261,7 +237,6 @@ def createMonthCorpuses(dates):
         dictionary = corpora.Dictionary.load('models/global-dictionary.dict')
         corpus = [dictionary.doc2bow(sentence) for sentence in tokenized_dict.values()]
         corpora.MmCorpus.serialize('models/' + date + '-tokenized.mm', corpus)
-
 
 if __name__ == '__main__':
     main()
