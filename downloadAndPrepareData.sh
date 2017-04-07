@@ -21,7 +21,7 @@ if [ ! -f "Posts.xml" ]; then
 fi
 
 echo "Will now extract all posts from 2013 and 2014 using precalculated line numbers."
-# These numbers are based on a version of the dump file donwloaded on April 5th, 2017.
+# These numbers are based on a version of the dump file downloaded on April 5th, 2017.
 Y2013=11799341
 Y2014=17237115
 END2013=`expr $Y2014 - 1`
