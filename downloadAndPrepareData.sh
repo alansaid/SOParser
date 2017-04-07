@@ -11,13 +11,13 @@ cd rawdata
 
 if [ ! -f "stackoverflow.com-Posts.7z" ]; then
 	echo "Downloading stackoverflow file (10gb), this might take a while"
-	#wget -c https://archive.org/download/stackexchange/stackoverflow.com-Posts.7z
+	wget -c https://archive.org/download/stackexchange/stackoverflow.com-Posts.7z
 fi 
 
 if [ ! -f "Posts.xml" ]; then
 	echo "Extracting stackoverflow file, this will take even longer"
 	echo "NB: this will result in one 50gb file, make sure you have enough disc space!"
-	#7za x stackoverflow.com-Posts.7z
+	7za x stackoverflow.com-Posts.7z
 fi
 
 echo "Will now extract all posts from 2013 and 2014 using precalculated line numbers."
