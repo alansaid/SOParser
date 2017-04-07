@@ -7,13 +7,14 @@ logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=lo
 
 def main():
     minposts = 50
+
     years = [2013, 2014]
-    # users = extractUsers(minposts, years)
+    extractUsers(minposts, years)
     extractComments(years)
 
 def extractComments(years):
     users = set()
-    usersFile = open('../userposts.txt', 'r')
+    usersFile = open('rawdata/userposts.txt', 'r')
     for userline in usersFile:
         [user, number] = userline.strip().split('\t')
         users.add(user)
@@ -51,7 +52,7 @@ def extractComments(years):
 
             monthusers = set()
             parsedpostsfile = open("data/"+ yearmonth + "-titles-tags-text.tsv","a")
-            rawpostsfile = open("../" + yearmonth + ".Posts.xml", 'r')
+            rawpostsfile = open("rawdata/" + yearmonth + ".Posts.xml", 'r')
             for post in rawpostsfile:
                 post = post.rstrip('\n')
                 if "row Id" not in post:
@@ -108,7 +109,7 @@ def extractUsers(minPostCount, years):
     users = {}
     for year in years:
         print "Parsing year: " +str(year)
-        posts = open("../"+str(year)+"-Posts.xml", 'r')
+        posts = open("rawdata/"+str(year)+"-Posts.xml", 'r')
         for post in posts:
             post = post.rstrip('\n')
             if "row Id" not in post:
@@ -139,7 +140,7 @@ def extractUsers(minPostCount, years):
             else:
                 users[ownerUserID] = 1
 
-    userPosts = open("../userposts.txt", 'a')
+    userPosts = open("rawdata/userposts.txt", 'a')
     for user in users:
         if users[user] > minPostCount:
             userPosts.write(str(user) + "\t" + str(users[user]) + "\n")

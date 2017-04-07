@@ -10,21 +10,21 @@ from nltk.tokenize import word_tokenize
 
 
 def main():
+    """Main entry."""
     dates = ['2013-01', '2013-02', '2013-03', '2013-04', '2013-05', '2013-06', '2013-07', '2013-08', '2013-09', '2013-10', '2013-11', '2013-12',
              '2014-01', '2014-02', '2014-03', '2014-04', '2014-05', '2014-06', '2014-07', '2014-08', '2014-09', '2014-10', '2014-11', '2014-12']
 
     dates = ['2013-01', '2013-02', '2013-03']
 
     numtopics = 40
-    # vocabsize = 500
-
+    vocabsize = 2000
     # filterUsers(dates)
-    # createDictionariesFromFiles(dates)
-    # createGlobalDictionaryFromMonthly(dates)
+    createDictionariesFromFiles(dates)
+    createGlobalDictionaryFromMonthly(dates, vocabsize)
     createMonthCorpuses(dates)
 
     performTFIDF(dates)
-    performLDA(dates, numtopics)
+    performLDA(dates, numtopics, vocabsize)
     lookupTopics(dates)
 
 
@@ -125,11 +125,11 @@ def lookupLDATopics(date, docIDs, numTopics):
         topics_by_value = sorted(topics, key=lambda tup: tup[1], reverse=True)
         return topics_by_value[:numTopics]
 
-def calculateEta(dates, date, numtopics):
+def calculateEta(dates, date, numtopics, vocabsize):
     prioldafile = "models/" + dates[dates.index(date) - 1] + "-lda.model"
     logging.info("loading " + prioldafile)
     priorlda = models.LdaModel.load(prioldafile)
-    eta = numpy.zeros((numtopics, 2000))
+    eta = numpy.zeros((numtopics, vocabsize))
     topics = priorlda.show_topics(num_topics=-1, num_words=2000, formatted=False)
     indexes = priorlda.id2word
     reverseindexes = dict(zip(indexes.values(), indexes.keys()))
@@ -151,14 +151,14 @@ def performTFIDF(dates):
         tfidf_corpus = tfidf[corpus]
         corpora.MmCorpus.save_corpus("models/"+date+"-tfidf.mm", tfidf_corpus)
 
-def performLDA(dates, numtopics):
+def performLDA(dates, numtopics, vocabsize):
     for date in dates:
         print("performing lda on " + str(date))
         dictionary = corpora.Dictionary.load("models/global-dictionary.dict")
         corpus = corpora.MmCorpus("models/" + date + "-tfidf.mm")
         if date != dates[0]:
             logging.info("Not month one, getting eta from last month")
-            eta = calculateEta(dates, date, numtopics)
+            eta = calculateEta(dates, date, numtopics, vocabsize)
             lda = models.LdaMulticore(corpus, id2word=dictionary, num_topics=numtopics, workers=3, eta=eta)
         else:
             logging.info("Month one, not setting eta")
@@ -182,7 +182,7 @@ def writecpicklefile(content, filename):
         cPickle.dump(content, f, cPickle.HIGHEST_PROTOCOL)
 
 
-def createGlobalDictionaryFromMonthly(dates):
+def createGlobalDictionaryFromMonthly(dates, vocabsize):
     global_tokenized_dict = {}
     for date in dates:
         monthly_tokenized_dictfile = "models/" + date + "-monthly-tokenized_dict.pdict"
@@ -192,7 +192,7 @@ def createGlobalDictionaryFromMonthly(dates):
     logging.info("Creating corpora.Dictionary")
     dictionary = corpora.Dictionary(global_tokenized_dict.values())
     logging.info("Compressing dictionary of size: %s", len(dictionary))
-    dictionary.filter_extremes(no_below=200, no_above=0.8, keep_n=2000)
+    dictionary.filter_extremes(no_below=200, no_above=0.8, keep_n=vocabsize)
     dictionary.compactify()
     logging.info("Dictionary size: %s", len(dictionary))
     dictionary.save('models/global-dictionary.dict')
