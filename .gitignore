@@ -1,5 +1,9 @@
 .idea
 .DS_Store
+data
+topics
+models
+rawdata
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
