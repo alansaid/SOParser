@@ -109,7 +109,7 @@ def extractUsers(minPostCount, years):
     users = {}
     for year in years:
         print "Parsing year: " +str(year)
-        posts = open("rawdata/"+str(year)+"-Posts.xml", 'r')
+        posts = open("rawdata/"+str(year)+".Posts.xml", 'r')
         for post in posts:
             post = post.rstrip('\n')
             if "row Id" not in post:
