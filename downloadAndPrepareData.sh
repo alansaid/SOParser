@@ -3,11 +3,11 @@ echo "This script will download and prepare the stackoverflow data. You will nee
 
 
 
-#mkdir data
-#mkdir models
-#mkdir topics
-#mkdir rawdata
-#cd rawdata
+mkdir data
+mkdir models
+mkdir topics
+mkdir rawdata
+cd rawdata
 
 if [ ! -f "stackoverflow.com-Posts.7z" ]; then
 	echo "Downloading stackoverflow file (10gb), this might take a while"
@@ -159,5 +159,7 @@ echo "2014-12 done"
 
 echo "Done extracting 2013 and 2014 data. Continuing to parse and clean."
 
-#python SOParser.py
+cd ..
+
+python SOParser.py
 

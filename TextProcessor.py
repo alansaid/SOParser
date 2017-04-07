@@ -139,6 +139,8 @@ def calculateEta(dates, date, numtopics, vocabsize):
         for wordtuple in wordlist:
             word = wordtuple[0]
             value = wordtuple[1]
+            if value < 0.1:
+                value = 0
             index = reverseindexes[word]
             eta[topicid][index] = value
     return eta
