@@ -135,9 +135,9 @@ def extractUsers(minPostCount, years):
             # commentCount = doc.get('CommentCount')
             # favoriteCount = doc.get('FavoriteCount')
             # communityOwnedDate = doc.get('CommunityOwnedDate')
-            if ownerUserID in users:
+            try:
                 users[ownerUserID] = users[ownerUserID] + 1
-            else:
+            except KeyError:
                 users[ownerUserID] = 1
 
     userPosts = open("rawdata/userposts.txt", 'a')

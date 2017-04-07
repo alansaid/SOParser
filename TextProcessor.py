@@ -14,17 +14,18 @@ def main():
     dates = ['2013-01', '2013-02', '2013-03', '2013-04', '2013-05', '2013-06', '2013-07', '2013-08', '2013-09', '2013-10', '2013-11', '2013-12',
              '2014-01', '2014-02', '2014-03', '2014-04', '2014-05', '2014-06', '2014-07', '2014-08', '2014-09', '2014-10', '2014-11', '2014-12']
 
-    dates = ['2013-01', '2013-02', '2013-03']
+    # dates = ['2013-01', '2013-02', '2013-03']
 
     numtopics = 40
     vocabsize = 2000
+    onlineLDAminprior = 0.1
     # filterUsers(dates)
     createDictionariesFromFiles(dates)
     createGlobalDictionaryFromMonthly(dates, vocabsize)
     createMonthCorpuses(dates)
 
     performTFIDF(dates)
-    performLDA(dates, numtopics, vocabsize)
+    performLDA(dates, numtopics, vocabsize, onlineLDAminprior)
     lookupTopics(dates)
 
 
@@ -125,7 +126,7 @@ def lookupLDATopics(date, docIDs, numTopics):
         topics_by_value = sorted(topics, key=lambda tup: tup[1], reverse=True)
         return topics_by_value[:numTopics]
 
-def calculateEta(dates, date, numtopics, vocabsize):
+def calculateEta(dates, date, numtopics, vocabsize, minpriorvalue):
     prioldafile = "models/" + dates[dates.index(date) - 1] + "-lda.model"
     logging.info("loading " + prioldafile)
     priorlda = models.LdaModel.load(prioldafile)
@@ -139,7 +140,7 @@ def calculateEta(dates, date, numtopics, vocabsize):
         for wordtuple in wordlist:
             word = wordtuple[0]
             value = wordtuple[1]
-            if value < 0.1:
+            if value < minpriorvalue:
                 value = 0
             index = reverseindexes[word]
             eta[topicid][index] = value
@@ -153,14 +154,14 @@ def performTFIDF(dates):
         tfidf_corpus = tfidf[corpus]
         corpora.MmCorpus.save_corpus("models/"+date+"-tfidf.mm", tfidf_corpus)
 
-def performLDA(dates, numtopics, vocabsize):
+def performLDA(dates, numtopics, vocabsize, minpriorvalue):
     for date in dates:
         print("performing lda on " + str(date))
         dictionary = corpora.Dictionary.load("models/global-dictionary.dict")
         corpus = corpora.MmCorpus("models/" + date + "-tfidf.mm")
         if date != dates[0]:
             logging.info("Not month one, getting eta from last month")
-            eta = calculateEta(dates, date, numtopics, vocabsize)
+            eta = calculateEta(dates, date, numtopics, vocabsize, minpriorvalue)
             lda = models.LdaMulticore(corpus, id2word=dictionary, num_topics=numtopics, workers=3, eta=eta)
         else:
             logging.info("Month one, not setting eta")
