@@ -63,7 +63,7 @@ def lookupTopics(dates):
         usertopicscores = {}
         documentfile = open("data/" + date + "-titles-tags-text.tsv")
         topicfile = open("topics/" + date + "-topics.txt", 'w')
-        lda = models.LdaModel.load("models/" + date + "-lda.model")
+        lda = models.LdaMulticore.load("ldamodels/" + date + "-lda.model")
 
         for doc in documentfile:
             [docid, userid, creationdate, score, title, tags, text] = doc.rstrip("\n").split("\t")
@@ -118,7 +118,7 @@ def lookupLDATopics(date, docIDs, numTopics):
     with open(tokenized_dictfile, 'r') as f:
         tokenized_dict = pickle.load(f)
     dictionary = corpora.Dictionary.load("models/global-dictionary.dict")
-    lda = models.LdaModel.load("models/"+date+"-lda.model")
+    lda = models.LdaModel.load("ldamodels/"+date+"-lda.model")
     for docID in docIDs:
         sentence = tokenized_dict[str(docID)]
         bow = dictionary.doc2bow(sentence)
@@ -127,10 +127,11 @@ def lookupLDATopics(date, docIDs, numTopics):
         return topics_by_value[:numTopics]
 
 def calculateEta(dates, date, numtopics, vocabsize, minpriorvalue):
-    prioldafile = "models/" + dates[dates.index(date) - 1] + "-lda.model"
+    prioldafile = "ldamodels/" + dates[dates.index(date) - 1] + "-lda.model"
     logging.info("loading " + prioldafile)
     priorlda = models.LdaModel.load(prioldafile)
     eta = numpy.zeros((numtopics, vocabsize))
+
     topics = priorlda.show_topics(num_topics=-1, num_words=2000, formatted=False)
     indexes = priorlda.id2word
     reverseindexes = dict(zip(indexes.values(), indexes.keys()))
@@ -160,15 +161,20 @@ def performLDA(dates, numtopics, vocabsize, minpriorvalue):
         dictionary = corpora.Dictionary.load("models/global-dictionary.dict")
         corpus = corpora.MmCorpus("models/" + date + "-tfidf.mm")
         if date != dates[0]:
-            logging.info("Not month one, getting eta from last month")
-            eta = calculateEta(dates, date, numtopics, vocabsize, minpriorvalue)
-            lda = models.LdaMulticore(corpus, id2word=dictionary, num_topics=numtopics, workers=3, eta=eta)
+
+            lda = models.LdaMulticore.load("ldamodels/" + dates[dates.index(date) - 1] + "-lda.model")
+            lda.update(corpus, decay=0.5, offset=corpus.length)
+
+            
+            # logging.info("Not month one, getting eta from last month")
+            # eta = calculateEta(dates, date, numtopics, vocabsize, minpriorvalue)
+            # lda = models.LdaMulticore(corpus, id2word=dictionary, num_topics=numtopics, workers=3, eta=eta)
         else:
             logging.info("Month one, not setting eta")
             lda = models.LdaMulticore(corpus, id2word=dictionary, num_topics=numtopics, workers=3)
         lda_corpus = lda[corpus]
-        corpora.MmCorpus.serialize('models/' + date + '-lda.mm', lda_corpus)
-        lda.save('models/' + date + '-lda.model')
+        corpora.MmCorpus.serialize('ldamodels/' + date + '-lda.mm', lda_corpus)
+        lda.save('ldamodels/' + date + '-lda.model')
 
 def tokenizeandstemline(text):
     stoplist = STOPWORDS
