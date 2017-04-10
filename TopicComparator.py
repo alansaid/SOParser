@@ -77,7 +77,7 @@ def getTopIndexes(month):
     return sorted(range(len(month)), key=lambda i: month[i])[-20:]
 
 def prepareDistribution(month):
-    lda = models.LdaModel.load("models/" + month + "-lda.model")
+    lda = models.LdaModel.load("ldamodels/" + month + "-lda.model")
     ldalist = lda.show_topics(num_topics=20, num_words=2000, log=False, formatted=False)
     sorted_topics = [sorted(topic[1], key=lambda tup: tup[0]) for topic in ldalist]
     dist = [[words[1] for words in topic] for topic in sorted_topics]
@@ -85,7 +85,7 @@ def prepareDistribution(month):
     return dist
 
 def prepareWordSet(month):
-    lda = models.LdaModel.load("models/" + month + "-lda.model")
+    lda = models.LdaModel.load("ldamodels/" + month + "-lda.model")
     ldalist = lda.show_topics(num_topics=20, num_words=100, log=False, formatted=False)
     ldatopics = getTopicWordSets(ldalist)
     return ldatopics
@@ -99,7 +99,7 @@ def getTopicWordSets(topics):
     return topicwords
 
 def printTopicWords(month):
-    lda = models.LdaModel.load("models/" + month + "-lda.model")
+    lda = models.LdaModel.load("ldamodels/" + month + "-lda.model")
     topicfile = open("topics/"+month+"-topicwords.txt", "w")
     ldalist = lda.show_topics(num_topics=20, num_words=5, log=False, formatted=False)
     wordlists = { topic[0]: [wordvals[0].encode('utf-8') for wordvals in topic[1]] for topic in ldalist}
