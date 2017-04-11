@@ -19,15 +19,15 @@ def main():
 
     numtopics = 40
     vocabsize = 2000
-    onlineLDAminprior = 0.05
-    priorweight = 0.15
+
+    priorweight = 0.01
     # filterUsers(dates)
     # createDictionariesFromFiles(dates)
     # createGlobalDictionaryFromMonthly(dates, vocabsize)
     # createMonthCorpuses(dates)
 
     # performTFIDF(dates)
-    performLDA(dates, numtopics, vocabsize, onlineLDAminprior)
+    performLDA(dates, numtopics, vocabsize)
     lookupTopics(dates)
 
 
@@ -192,7 +192,7 @@ def performTFIDF(dates):
         tfidf_corpus = tfidf[corpus]
         corpora.MmCorpus.save_corpus("models/"+date+"-tfidf.mm", tfidf_corpus)
 
-def performLDA(dates, numtopics, vocabsize, minpriorvalue):
+def performLDA(dates, numtopics, vocabsize):
     for date in dates:
         print("performing lda on " + str(date))
         dictionary = corpora.Dictionary.load("models/global-dictionary.dict")
