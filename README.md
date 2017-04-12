@@ -20,3 +20,6 @@ by those users and saves in data files used in later stages of the analysis. The
 ```SOParser.py```.
 1. ```TopicComparator.py``` - Compares topics month-by-month, e.g. compares the topics generated for 2013-05 with the 
 topics generated for 2013-06.
+
+
+You might need to run nltk.download() to download stopwords.
