@@ -12,22 +12,22 @@ from nltk.tokenize import word_tokenize
 def main():
     """Main entry."""
     global priorweight
-    dates = ['2013-01', '2013-02', '2013-03', '2013-04', '2013-05', '2013-06', '2013-07', '2013-08', '2013-09', '2013-10', '2013-11', '2013-12',
-             '2014-01', '2014-02', '2014-03', '2014-04', '2014-05', '2014-06', '2014-07', '2014-08', '2014-09', '2014-10', '2014-11', '2014-12']
+    dates = ['2013-01', '2013-02', '2013-03', '2013-04', '2013-05', '2013-06', '2013-07', '2013-08', '2013-09', '2013-10', '2013-11', '2013-12']#,
+             #'2014-01', '2014-02', '2014-03', '2014-04', '2014-05', '2014-06', '2014-07', '2014-08', '2014-09', '2014-10', '2014-11', '2014-12']
 
-    # dates = ['2013-01', '2013-02']#, '2013-03']
+    dates = ['2013-01', '2013-02', '2013-03']
 
     numtopics = 40
     vocabsize = 2000
 
-    priorweight = 0.04
+    priorweight = 0.0
     # filterUsers(dates)
     # createDictionariesFromFiles(dates)
-    createGlobalDictionaryFromMonthly(dates, vocabsize)
+    # createGlobalDictionaryFromMonthly(dates, vocabsize)
     # createMonthCorpuses(dates)
 
     # performTFIDF(dates)
-    # performLDA(dates, numtopics, vocabsize)
+    performLDA(dates, numtopics, vocabsize)
     # lookupTopics(dates)
 
 
@@ -128,7 +128,6 @@ def lookupLDATopics(date, docIDs, numTopics):
         topics_by_value = sorted(topics, key=lambda tup: tup[1], reverse=True)
         return topics_by_value[:numTopics]
 
-
 def calculateEta(dates, date, numtopics, vocabsize):
     priordate = dates[dates.index(date) - 1]
     tokenized_dictfile = "models/"+priordate+"-monthly-tokenized_dict.pdict"
@@ -197,12 +196,12 @@ def performLDA(dates, numtopics, vocabsize):
         print("performing lda on " + str(date))
         dictionary = corpora.Dictionary.load("models/global-dictionary.dict")
         corpus = corpora.MmCorpus("models/" + date + "-tfidf.mm")
-        if date != dates[0]:
-            logging.info("Not month one, getting eta from last month")
+        if date != dates[0] and priorweight != 0:
+            logging.info("Calculating eta based on prior month")
             eta = calculateEta(dates, date, numtopics, vocabsize)
             lda = models.LdaMulticore(corpus, id2word=dictionary, num_topics=numtopics, workers=3, eta=eta)
         else:
-            logging.info("Month one, not setting eta")
+            logging.info("Eta weighting factor too low or no prior months")
             lda = models.LdaMulticore(corpus, id2word=dictionary, num_topics=numtopics, workers=3)
         lda_corpus = lda[corpus]
         corpora.MmCorpus.serialize('ldamodels/' + date + '-lda.mm', lda_corpus)
@@ -241,8 +240,6 @@ def merge_two_dicts(x, y):
     return z
 
 def createDictionariesFromFiles(dates):
-    global_tokenized_dict = {}
-    global_original_dict = {}
     for date in dates:
         print("parsing month: " + date)
         monthly_tokenized_dict = {}
@@ -253,8 +250,6 @@ def createDictionariesFromFiles(dates):
             docids[id] = (userid, score)
             text = title + " " + tags + " " + text
             tokenized_line = tokenizeandstemline(text)
-            global_tokenized_dict[id] = tokenized_line
-            global_original_dict[id] = text
             monthly_tokenized_dict[id] = tokenized_line
             monthly_original_dict[id] = text
         monthly_docids_dictfile = "models/"+date+"-docids.pdict"
