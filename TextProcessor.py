@@ -20,7 +20,7 @@ def main():
     numtopics = 40
     vocabsize = 2000
 
-    priorweight = 0.0
+    priorweight = 0.04
     # filterUsers(dates)
     # createDictionariesFromFiles(dates)
     # createGlobalDictionaryFromMonthly(dates, vocabsize)
