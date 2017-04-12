@@ -1,7 +1,7 @@
 from __future__ import print_function
 from gensim import corpora, models
 from gensim.parsing.preprocessing import STOPWORDS
-import logging, re, numpy, pickle, cPickle
+import logging, re, numpy, cPickle
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.DEBUG)
 from nltk.stem.porter import PorterStemmer
 from nltk.tokenize import word_tokenize
@@ -118,7 +118,7 @@ def readFile(date):
 def lookupLDATopics(date, docIDs, numTopics):
     tokenized_dictfile = "models/global-tokenized_dict.pdict"
     with open(tokenized_dictfile, 'r') as f:
-        tokenized_dict = pickle.load(f)
+        tokenized_dict = cPickle.load(f)
     dictionary = corpora.Dictionary.load("models/global-dictionary.dict")
     lda = models.LdaModel.load("ldamodels/"+date+"-lda.model")
     for docID in docIDs:
@@ -133,7 +133,7 @@ def calculateEta(dates, date, numtopics, vocabsize):
     priordate = dates[dates.index(date) - 1]
     tokenized_dictfile = "models/"+priordate+"-monthly-tokenized_dict.pdict"
     with open(tokenized_dictfile, 'r') as f:
-        tokenized_dict = pickle.load(f)
+        tokenized_dict = cPickle.load(f)
     dictionary = corpora.Dictionary.load("models/global-dictionary.dict")
     priorlda = models.LdaMulticore.load("ldamodels/" + priordate + "-lda.model")
 
@@ -214,10 +214,6 @@ def tokenizeandstemline(text):
     tokenized_line = [stemmer.stem(word.lower()) for word in word_tokenize(text.decode('utf-8'), language='english') if word not in stoplist and len(word) > 3 and re.match('^[\w-]+$', word) is not None]
     return tokenized_line
 
-def writepicklefile(content, filename):
-    with open(filename, 'w') as f:
-        pickle.dump(content, f, pickle.HIGHEST_PROTOCOL)
-
 def writecpicklefile(content, filename):
     with open(filename, 'w') as f:
         cPickle.dump(content, f, cPickle.HIGHEST_PROTOCOL)
@@ -229,7 +225,7 @@ def createGlobalDictionaryFromMonthly(dates, vocabsize):
         monthly_tokenized_dictfile = "models/" + date + "-monthly-tokenized_dict.pdict"
         with open(monthly_tokenized_dictfile, 'r') as f:
             logging.info("Opening file %s", monthly_tokenized_dictfile)
-            global_tokenized_dict = merge_two_dicts(pickle.load(f), global_tokenized_dict)
+            global_tokenized_dict = merge_two_dicts(cPickle.load(f), global_tokenized_dict)
     logging.info("Creating corpora.Dictionary")
     dictionary = corpora.Dictionary(global_tokenized_dict.values())
     logging.info("Compressing dictionary of size: %s", len(dictionary))
@@ -262,11 +258,11 @@ def createDictionariesFromFiles(dates):
             monthly_tokenized_dict[id] = tokenized_line
             monthly_original_dict[id] = text
         monthly_docids_dictfile = "models/"+date+"-docids.pdict"
-        writepicklefile(docids, monthly_docids_dictfile)
+        writecpicklefile(docids, monthly_docids_dictfile)
         monthly_tokenized_dictfile = "models/"+date+"-monthly-tokenized_dict.pdict"
-        writepicklefile(monthly_tokenized_dict, monthly_tokenized_dictfile)
+        writecpicklefile(monthly_tokenized_dict, monthly_tokenized_dictfile)
         monthly_original_dictfile = "models/"+date+"-monthly-original_dict.pdict"
-        writepicklefile(monthly_original_dict, monthly_original_dictfile)
+        writecpicklefile(monthly_original_dict, monthly_original_dictfile)
 
 def createMonthCorpuses(dates):
     for date in dates:
@@ -274,7 +270,7 @@ def createMonthCorpuses(dates):
         print("parsing month: " + date)
         monthly_dict_file = "models/" + date + "-monthly-tokenized_dict.pdict"
         with open(monthly_dict_file, 'r') as f:
-            tokenized_dict = pickle.load(f)
+            tokenized_dict = cPickle.load(f)
         dictionary = corpora.Dictionary.load('models/global-dictionary.dict')
         corpus = [dictionary.doc2bow(sentence) for sentence in tokenized_dict.values()]
         corpora.MmCorpus.serialize('models/' + date + '-tokenized.mm', corpus)
