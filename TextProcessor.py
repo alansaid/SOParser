@@ -47,66 +47,6 @@ def filterUsers(dates):
         ufile.write(user + "\n")
     ufile.close()
 
-def lookupTopics(dates):
-    dictionary = corpora.Dictionary.load("models/global-dictionary.dict")
-    document_users = {}
-    document_scores = {}
-    for date in dates:
-        date = str(date)
-        print(date)
-
-        tokenized_dictfile = "models/"+date+"-monthly-tokenized_dict.pdict"
-        tokenized_dict = {}
-        with open(tokenized_dictfile, 'r') as f:
-            tokenized_dict = cPickle.load(f)
-
-        usertopics = {}
-        userdoctopics = {}
-        usertopicscores = {}
-        documentfile = open("data/" + date + "-titles-tags-text.tsv")
-        topicfile = open("topics/" + date + "-topics.txt", 'w')
-        lda = models.LdaMulticore.load("ldamodels/" + date + "-lda.model")
-
-        for doc in documentfile:
-            [docid, userid, creationdate, score, title, tags, text] = doc.rstrip("\n").split("\t")
-            document_users[docid] = userid
-            document_scores[docid] = score
-            sentence = tokenized_dict[docid]
-            bow = dictionary.doc2bow(sentence)
-            documenttopics = lda[bow]
-            for (topicid, topicvalue) in documenttopics:
-                topicthreshold = 0.1
-                if topicvalue >= topicthreshold:
-                    try:
-                        userdoctopics[userid]
-                    except KeyError:
-                        userdoctopics[userid] = {}
-                        userdoctopics[userid][topicid] = []
-                        usertopicscores[userid] = {}
-                        usertopicscores[userid][topicid] = []
-                    try:
-                        userdoctopics[userid][topicid]
-                    except KeyError:
-                        userdoctopics[userid][topicid] = []
-                        usertopicscores[userid][topicid] = []
-                    userdoctopics[userid][topicid].append(topicvalue)
-                    usertopicscores[userid][topicid].append(int(score))
-        for userid in userdoctopics.keys():
-            usertopics[userid] = {}
-            for topicid in userdoctopics[userid].keys():
-                meantopicvalue = numpy.mean(userdoctopics[userid][topicid])
-                meantopicscore = numpy.mean(usertopicscores[userid][topicid])
-                numdocs = len(userdoctopics[userid][topicid])
-                if meantopicvalue < 0.1:
-                    continue
-                usertopics[userid][topicid] = meantopicvalue
-                topicterms = lda.get_topic_terms(topicid, topn=5)
-                topicwords = ""
-                for term in topicterms:
-                    topicwords += dictionary.get(term[0]).ljust(15) + "\t"
-                resultline = str(userid)+"\t"+str(topicid)+"\t"+ str(meantopicvalue) + "\t" + str(numdocs) + "\t" + str(meantopicscore) + "\t" + str(topicwords) + "\n"
-                topicfile.write(resultline)
-        topicfile.close()
 
 def readFile(date):
     original_sentences = {}
@@ -117,7 +57,7 @@ def readFile(date):
 
 def lookupLDATopics(date, docIDs, numTopics):
     tokenized_dictfile = "models/global-tokenized_dict.pdict"
-    with open(tokenized_dictfile, 'r') as f:
+    with open(tokenized_dictfile, 'rb') as f:
         tokenized_dict = cPickle.load(f)
     dictionary = corpora.Dictionary.load("models/global-dictionary.dict")
     lda = models.LdaModel.load("ldamodels/"+date+"-lda.model")
@@ -131,7 +71,7 @@ def lookupLDATopics(date, docIDs, numTopics):
 def calculateEta(dates, date, numtopics, vocabsize):
     priordate = dates[dates.index(date) - 1]
     tokenized_dictfile = "models/"+priordate+"-monthly-tokenized_dict.pdict"
-    with open(tokenized_dictfile, 'r') as f:
+    with open(tokenized_dictfile, 'rb') as f:
         tokenized_dict = cPickle.load(f)
     dictionary = corpora.Dictionary.load("models/global-dictionary.dict")
     priorlda = models.LdaMulticore.load("ldamodels/" + priordate + "-lda.model")
@@ -214,7 +154,7 @@ def tokenizeandstemline(text):
     return tokenized_line
 
 def writecpicklefile(content, filename):
-    with open(filename, 'w') as f:
+    with open(filename, 'wb') as f:
         cPickle.dump(content, f, cPickle.HIGHEST_PROTOCOL)
 
 
@@ -222,7 +162,7 @@ def createGlobalDictionaryFromMonthly(dates, vocabsize):
     global_tokenized_dict = {}
     for date in dates:
         monthly_tokenized_dictfile = "models/" + date + "-monthly-tokenized_dict.pdict"
-        with open(monthly_tokenized_dictfile, 'r') as f:
+        with open(monthly_tokenized_dictfile, 'rb') as f:
             logging.info("Opening file %s", monthly_tokenized_dictfile)
             global_tokenized_dict = merge_two_dicts(cPickle.load(f), global_tokenized_dict)
     logging.info("Creating corpora.Dictionary")
@@ -264,7 +204,7 @@ def createMonthCorpuses(dates):
         logging.info("Parsing date: %s", date)
         print("parsing month: " + date)
         monthly_dict_file = "models/" + date + "-monthly-tokenized_dict.pdict"
-        with open(monthly_dict_file, 'r') as f:
+        with open(monthly_dict_file, 'rb') as f:
             tokenized_dict = cPickle.load(f)
         dictionary = corpora.Dictionary.load('models/global-dictionary.dict')
         corpus = [dictionary.doc2bow(sentence) for sentence in tokenized_dict.values()]
