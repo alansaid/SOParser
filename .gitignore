@@ -4,6 +4,7 @@ data
 topics
 models
 rawdata
+ldamodels
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
