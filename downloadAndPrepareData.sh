@@ -163,3 +163,6 @@ cd ..
 
 python SOParser.py
 
+cd data
+cat *-users.txt | sort | uniq > allusers.txt
+cd ..
