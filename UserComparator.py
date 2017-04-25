@@ -1,6 +1,8 @@
 from gensim import corpora, models
-import cPickle, numpy, logging
-from collections import OrderedDict
+import cPickle, numpy, logging, scipy
+from numpy.linalg import norm
+from scipy.stats import entropy
+
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.DEBUG)
 
 def main():
@@ -14,7 +16,68 @@ def main():
     vocabsize = 2000
     topicthreshold = 0.0
 
-    summarizeTopicsPerUser(dates)
+    # summarizeTopicsPerUser(dates)
+    compareMonths(dates)
+
+def compareMonths(dates):
+    i = 1
+    for month in dates:
+        print month
+        nextmonth = dates[i]
+        # TVDBasedSimilarity(month, nextmonth)
+        KLDBasedSimilarity(month, nextmonth)
+        JSDBasedSimilarity(month, nextmonth)
+        # intersectionBasedSimilarity(month, nextmonth)
+        i += 1
+        if i >= len(dates):
+            break
+
+def similarity(month1, month2, simfunc, filename):
+    f = open("topics/"+filename+"_user_" + month1 + "_" + month2 + ".txt", "w")
+    lda1topics = readFile(month1)
+    lda2topics = readFile(month2)
+    for lda1topic in lda1topics:
+        line = ""
+        for lda2topic in lda2topics:
+            divergence = simfunc(lda1topic, lda2topic)
+            line += "\t" + str(divergence)
+        f.write(line + "\n")
+    f.close()
+
+# def TVDBasedSimilarity(month1, month2):
+#     similarity(month1, month2, TVD, "tvd")
+
+def JSDBasedSimilarity(month1, month2):
+    similarity(month1, month2, JSD, "jsd")
+
+def KLDBasedSimilarity(month1, month2):
+    similarity(month1, month2, scipy.stats.entropy, "kld")
+
+# def TVD(month1, month2):
+#     m1 = getTopIndexes(month1)
+#     m2 = getTopIndexes(month2)
+#     idxs = list(set(m1)|set(m2))
+#     mo1 = array(month1)[idxs]
+#     mo2 = array(month2)[idxs]
+#     return sum(abs(mo1-mo2))/2
+
+
+def readFile(month):
+    topicfile = open("topics/" + month + "-topicusers.txt", 'r')
+    dist = [[float(value) for value in line.strip('\n').split('\t')] for line in topicfile]
+    # print len(dist)
+    # for tid in dist:
+    #     print tid
+
+    topicfile.close()
+
+    return dist
+
+def JSD(P, Q):
+    _P = P / norm(P, ord=1)
+    _Q = Q / norm(Q, ord=1)
+    _M = 0.5 * (_P + _Q)
+    return 0.5 * (entropy(_P, _M) + entropy(_Q, _M))
 
 
 
@@ -35,7 +98,7 @@ def summarizeTopicsPerUser(dates):
         with open(tokenized_dictfile, 'r') as f:
             tokenized_dict = cPickle.load(f)
         documentfile = open("data/" + date + "-titles-tags-text.tsv")
-        topicfile = open("topics/" + date + "-topicusers.txt", 'w')
+
         lda = models.LdaMulticore.load("ldamodels/" + date + "-lda.model")
 
         for doc in documentfile:
@@ -70,6 +133,7 @@ def summarizeTopicsPerUser(dates):
                     thistopic[userid] = 0
                 line += "\t" + str(thistopic[userid])
             line += "\n"
+            line = line.lstrip("\t")
             # values[topicid] = OrderedDict(sorted(thistopic.items()))
             # line =  str(topicid) + "\t" + str(len(values[topicid]))
             topicfile.write(line)

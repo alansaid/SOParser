@@ -15,21 +15,31 @@ def main():
     dates = ['2013-01', '2013-02', '2013-03', '2013-04', '2013-05', '2013-06', '2013-07', '2013-08', '2013-09', '2013-10', '2013-11', '2013-12',
              '2014-01', '2014-02', '2014-03', '2014-04', '2014-05', '2014-06', '2014-07', '2014-08', '2014-09', '2014-10', '2014-11', '2014-12']
 
-    # dates = ['2013-01', '2013-02', '2013-03']
+    dates = ['2013-01', '2013-02', '2013-03']
 
     numtopics = 40
     vocabsize = 2000
 
     priorweight = 0.05
+    workers = 1
     # filterUsers(dates)
-    createDictionariesFromFiles(dates)
-    createGlobalDictionaryFromMonthly(dates, vocabsize)
-    createMonthCorpuses(dates)
-
-    performTFIDF(dates)
-    performLDA(dates, numtopics, vocabsize)
+    # createDictionariesFromFiles(dates)
+    # createGlobalDictionaryFromMonthly(dates, vocabsize)
+    # createMonthCorpuses(dates)
+    #
+    # performTFIDF(dates)
+    performLDA(dates, numtopics, vocabsize, workers)
     # lookupTopics(dates)
 
+    # lookatdist(dates[1])
+
+
+def lookatdist(date):
+    lda = models.LdaModel.load("ldamodels/" + date + "-lda.model")
+    # lda = models.LdaMulticore.load("ldamodels/" + date + "-lda.model")
+    print(lda.LdaState.get_lambda())
+    # ldalambda = lda.get_lambda()
+    # print(ldalambda)
 
 # run this to only get users that exist in all months
 def filterUsers(dates):
@@ -131,7 +141,7 @@ def performTFIDF(dates):
         tfidf_corpus = tfidf[corpus]
         corpora.MmCorpus.save_corpus("models/"+date+"-tfidf.mm", tfidf_corpus)
 
-def performLDA(dates, numtopics, vocabsize):
+def performLDA(dates, numtopics, vocabsize, workers):
     for date in dates:
         print("performing lda on " + str(date))
         dictionary = corpora.Dictionary.load("models/global-dictionary.dict")
@@ -139,10 +149,10 @@ def performLDA(dates, numtopics, vocabsize):
         if date != dates[0] and priorweight != 0:
             logging.info("Calculating eta based on prior month")
             eta = calculateEta(dates, date, numtopics, vocabsize)
-            lda = models.LdaMulticore(corpus, id2word=dictionary, num_topics=numtopics, workers=3, eta=eta)
+            lda = models.LdaMulticore(corpus, id2word=dictionary, num_topics=numtopics, workers=workers, eta=eta)
         else:
             logging.info("Eta weighting factor too low or no prior months")
-            lda = models.LdaMulticore(corpus, id2word=dictionary, num_topics=numtopics, workers=3)
+            lda = models.LdaMulticore(corpus, id2word=dictionary, num_topics=numtopics, workers=workers)
         lda_corpus = lda[corpus]
         corpora.MmCorpus.serialize('ldamodels/' + date + '-lda.mm', lda_corpus)
         lda.save('ldamodels/' + date + '-lda.model')

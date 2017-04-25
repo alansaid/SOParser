@@ -35,6 +35,7 @@ def similarity(month1, month2, simfunc, filename):
     lda1topics = prepareDistribution(month1)
     lda2topics = prepareDistribution(month2)
     for lda1topic in lda1topics:
+
         line = ""
         for lda2topic in lda2topics:
             divergence = simfunc(lda1topic, lda2topic)
