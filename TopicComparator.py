@@ -10,10 +10,11 @@ def main():
     global numtopics, vocabsize
     dates = ['2013-01', '2013-02', '2013-03', '2013-04', '2013-05', '2013-06', '2013-07', '2013-08', '2013-09', '2013-10', '2013-11', '2013-12',
              '2014-01', '2014-02', '2014-03', '2014-04', '2014-05', '2014-06', '2014-07', '2014-08', '2014-09', '2014-10', '2014-11', '2014-12']
-    # dates = ['2013-01', '2013-02'] #, '2013-03', '2013-03']
+    # dates = ['2013-02', '2013-03'] #, '2013-03', '2013-03']
     numtopics = 40
     vocabsize = 2000
-    compareMonths(dates)
+    # compareMonths(dates)
+    printTopicWords(dates)
 
 
 
@@ -104,15 +105,16 @@ def getTopicWordSets(topics):
         topicwords[topicid] = set([tup[0] for tup in wordvector if tup[1] > 0.001])
     return topicwords
 
-def printTopicWords(month):
-    lda = models.LdaModel.load("ldamodels/" + month + "-lda.model")
-    topicfile = open("topics/"+month+"-topicwords.txt", "w")
-    ldalist = lda.show_topics(num_topics=numtopics, num_words=5, log=False, formatted=False)
-    wordlists = { topic[0]: [wordvals[0].encode('utf-8') for wordvals in topic[1]] for topic in ldalist}
-    for topic in wordlists.keys():
-        line = str(topic) + "\t" + " ".join(wordlists[topic]) + "\n"
-        topicfile.write(line)
-    topicfile.close()
+def printTopicWords(dates):
+    for month in dates:
+        lda = models.LdaModel.load("ldamodels/" + month + "-lda.model")
+        topicfile = open("topics/"+month+"-topicwords.txt", "w")
+        ldalist = lda.show_topics(num_topics=numtopics, num_words=10, log=False, formatted=False)
+        wordlists = { topic[0]: [wordvals[0].encode('utf-8') for wordvals in topic[1]] for topic in ldalist}
+        for topic in wordlists.keys():
+            line = str(topic) + "\t" + " ".join(wordlists[topic]) + "\n"
+            topicfile.write(line)
+        topicfile.close()
 
 
 
