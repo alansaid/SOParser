@@ -34,7 +34,7 @@ F2014="2014.Posts.xml"
 if [ ! -f $F2013 ]; then
 	awk 'NR=='$Y2013', NR=='$END2013'-1; NR=='$END2013' {print; exit}' Posts.xml > $F2013
 fi
-if [ ! -f $F2013 ]; then
+if [ ! -f $F2014 ]; then
 	awk 'NR=='$Y2014', NR=='$END2014'-1; NR=='$END2014' {print; exit}' Posts.xml > $F2014
 fi
 
