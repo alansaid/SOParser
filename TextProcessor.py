@@ -21,17 +21,16 @@ def main():
     vocabsize = 2000
 
     priorweight = 0.05
-    workers = 1
+    workers = 3
     # filterUsers(dates)
-    # createDictionariesFromFiles(dates)
-    # createGlobalDictionaryFromMonthly(dates, vocabsize)
-    # createMonthCorpuses(dates)
+    createDictionariesFromFiles(dates)
+    createGlobalDictionaryFromMonthly(dates, vocabsize)
+    createMonthCorpuses(dates)
     #
-    # performTFIDF(dates)
+    performTFIDF(dates)
     performLDA(dates, numtopics, vocabsize, workers)
     # lookupTopics(dates)
 
-    # lookatdist(dates[1])
 
 
 def lookatdist(date):
